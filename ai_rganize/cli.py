@@ -3,6 +3,7 @@ Command-line interface for AIrganizer
 """
 
 import click
+from pathlib import Path
 from .core import AI_rganize
 from .utils import Console, Panel
 
@@ -15,7 +16,8 @@ from .utils import Console, Panel
 @click.option('--ai-limit', default=50, help='Maximum number of files to analyze with AI (default: 50)')
 @click.option('--max-file-size', default=10, help='Maximum file size in MB for AI analysis (default: 10)')
 @click.option('--no-ai', is_flag=True, help='Disable AI categorization, use only rule-based')
-def main(api_key, directory, dry_run, backup, ai_limit, max_file_size, no_ai):
+@click.option('--summary-only', is_flag=True, help='Show only summary in dry run (no file details)')
+def main(api_key, directory, dry_run, backup, ai_limit, max_file_size, no_ai, summary_only):
     """AI-rganize - Intelligently organize your files using AI."""
     
     console = Console()
@@ -27,7 +29,7 @@ def main(api_key, directory, dry_run, backup, ai_limit, max_file_size, no_ai):
     ))
     
     try:
-        organizer = AI_rganize(api_key, max_file_size_mb=max_file_size)
+        organizer = AI_rganize(api_key, max_file_size_mb=max_file_size, require_api=not no_ai)
     except ValueError as e:
         console.print(f"[red]Error: {e}[/red]")
         return
@@ -66,7 +68,7 @@ def main(api_key, directory, dry_run, backup, ai_limit, max_file_size, no_ai):
         ai_limit = 0
     
     plan = organizer.create_organization_plan(all_files, ai_limit)
-    organizer.display_organization_plan(plan)
+    organizer.display_organization_plan(plan, show_details=not summary_only)
     
     if dry_run:
         console.print("[yellow]Dry run complete. No files were moved.[/yellow]")

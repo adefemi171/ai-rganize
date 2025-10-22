@@ -19,13 +19,16 @@ from .permissions import PermissionHandler
 class AI_rganize:
     """Main AI-rganize class for intelligent file organization."""
     
-    def __init__(self, api_key: Optional[str] = None, max_file_size_mb: int = 10):
+    def __init__(self, api_key: Optional[str] = None, max_file_size_mb: int = 10, require_api: bool = True):
         """Initialize AI-rganize."""
         self.api_key = api_key or os.getenv('OPENAI_API_KEY')
-        if not self.api_key:
+        if require_api and not self.api_key:
             raise ValueError("OpenAI API key not found. Set OPENAI_API_KEY environment variable.")
         
-        self.client = openai.OpenAI(api_key=self.api_key)
+        if self.api_key:
+            self.client = openai.OpenAI(api_key=self.api_key)
+        else:
+            self.client = None
         self.home_dir = Path.home()
         self.target_dirs = self._get_common_directories()
         self.max_file_size_bytes = max_file_size_mb * 1024 * 1024  # Convert MB to bytes
@@ -147,6 +150,9 @@ class AI_rganize:
     def categorize_with_ai(self, file_info: Dict) -> str:
         """Use AI to categorize a file based on its content and metadata."""
         import time
+        
+        if not self.client:
+            return 'other'
         
         try:
             content_preview = self.get_file_content_preview(file_info['path'])
@@ -286,7 +292,7 @@ class AI_rganize:
             print(f"Backup failed: {e}")
             return False
     
-    def display_organization_plan(self, plan: Dict[str, List[Dict]]) -> None:
+    def display_organization_plan(self, plan: Dict[str, List[Dict]], show_details: bool = True) -> None:
         """Display the organization plan to the user."""
         print("\nFile Organization Plan:")
         print("=" * 50)
@@ -297,11 +303,27 @@ class AI_rganize:
         for category, files in plan.items():
             if files:
                 size_mb = sum(f['size'] for f in files) / (1024 * 1024)
-                print(f"{category.title()}: {len(files)} files ({size_mb:.1f} MB)")
+                print(f"\n📁 {category.title()}: {len(files)} files ({size_mb:.1f} MB)")
                 total_files += len(files)
                 total_size += size_mb
+                
+                if show_details:
+                    # Show individual file movements
+                    for file_info in files:
+                        source_path = Path(file_info['path'])
+                        file_name = file_info['name']
+                        file_size = file_info['size'] / (1024 * 1024)  # Convert to MB
+                        
+                        # Determine destination path
+                        dest_dir = source_path.parent / category
+                        dest_path = dest_dir / file_name
+                        
+                        print(f"  📄 {file_name} ({file_size:.1f} MB)")
+                        print(f"     FROM: {source_path}")
+                        print(f"     TO:   {dest_path}")
+                        print()
         
-        print(f"\nTOTAL: {total_files} files ({total_size:.1f} MB)")
+        print(f"\n📊 SUMMARY: {total_files} files ({total_size:.1f} MB) will be organized")
         print("=" * 50)
     
     def execute_organization(self, plan: Dict[str, List[Dict]], target_dir: Path) -> bool:
