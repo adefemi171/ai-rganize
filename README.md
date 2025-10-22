@@ -1,4 +1,4 @@
-# AIrganizer 🧠📁
+# AI-rganizer 🧠📁
 
 An intelligent file organization tool that uses AI to automatically categorize and organize your files. Works on **macOS**, **Linux (Ubuntu, etc.)**, and **Windows**.
 
@@ -27,23 +27,27 @@ brew install uv
 ```
 
 **Linux:**
+
 ```bash
 curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 
 **Windows:**
+
 ```powershell
 powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
 ```
 
 **Alternative (PyPI):**
+
 ```bash
 pip install uv
 ```
 
 For more installation options, see the [official uv installation guide](https://docs.astral.sh/uv/getting-started/installation/).
 
-**Then set up AIrganizer:**
+**Then set up AI-rganizer:**
+
 ```bash
 # 1. Clone the repository
 git clone https://github.com/yourusername/ai-rganizer.git
@@ -64,6 +68,7 @@ ai-rganizer --dry-run
 ```
 
 **What uv does for you:**
+
 - 🚀 **Automatic virtual environment creation** (`.venv/` directory)
 - 📦 **Dependency resolution and installation** from `pyproject.toml`
 - 🔒 **Lockfile management** (`uv.lock`) for reproducible builds
@@ -74,6 +79,7 @@ ai-rganizer --dry-run
 ### **Manual Installation**
 
 1. **Install dependencies**:
+
    ```bash
    pip install -r requirements.txt
    ```
@@ -93,6 +99,7 @@ ai-rganizer --dry-run
 ### Basic Usage
 
 **Basic commands:**
+
 ```bash
 ai-rganizer                                    # Organize all common directories
 ai-rganizer --dry-run                         # Dry run (preview without moving files)
@@ -102,12 +109,14 @@ ai-rganizer --ai-limit 20 --max-file-size 15  # Limit AI analysis to 20 files an
 ```
 
 **Alternative: Using uv run (no activation needed):**
+
 ```bash
 uv run ai-rganizer --dry-run
 uv run ai-rganizer --directory ~/Documents
 ```
 
 **Project management with uv:**
+
 ```bash
 uv sync                    # Install/update dependencies
 uv lock --upgrade         # Update lock file
@@ -115,7 +124,6 @@ uv add package-name       # Add new dependency
 uv remove package-name    # Remove dependency
 uv tree                   # View dependency tree
 ```
-
 
 ### Command Line Options
 
@@ -134,7 +142,8 @@ export OPENAI_API_KEY="your_api_key_here"
 ```
 
 Or create a `.env` file:
-```
+
+```env
 OPENAI_API_KEY=your_api_key_here
 ```
 
@@ -183,10 +192,11 @@ The tool organizes files into these categories:
 ## Development
 
 ### **Project Structure**
-```
+
+```text
 ai-rganizer/
 ├── __init__.py          # Package initialization
-├── core.py              # Main AIrganizer class
+├── core.py              # Main AI-rganizer class
 ├── cli.py               # Command-line interface
 ├── permissions.py       # Permission handling
 ├── permissions_cli.py   # Permission setup CLI
@@ -196,6 +206,7 @@ ai-rganizer/
 ### **Development & Contributing**
 
 **Setup for development:**
+
 ```bash
 # Clone and setup
 git clone https://github.com/yourusername/ai-rganizer.git
@@ -206,6 +217,7 @@ uv pip install -e .
 ```
 
 **Development commands:**
+
 ```bash
 ai-rganizer --help               # Test the tool
 ai-rganizer --dry-run           # Test with dry run
@@ -214,6 +226,7 @@ uv lock --upgrade                # Update lock file
 ```
 
 **Contributing:**
+
 1. Fork the repository
 2. Create a feature branch
 3. Make your changes
@@ -223,6 +236,7 @@ uv lock --upgrade                # Update lock file
 ## Troubleshooting
 
 ### Permission Issues
+
 ```bash
 # Check permissions
 ai-rganizer-permissions
@@ -232,6 +246,7 @@ ai-rganizer --directory ~/Documents
 ```
 
 ### API Key Issues
+
 ```bash
 # Make sure your API key is set:
 export OPENAI_API_KEY="your_key_here"
@@ -239,6 +254,7 @@ export OPENAI_API_KEY="your_key_here"
 ```
 
 ### Large Files
+
 The tool automatically skips files larger than 10MB for AI analysis to avoid high API costs. These files are categorized using rule-based methods.
 
 ## Backup and Recovery
@@ -271,6 +287,7 @@ Contributions welcome! Please feel free to submit issues and pull requests.
 ## Disclaimer
 
 This tool moves and organizes your files. Always:
+
 - Test with `--dry-run` first
 - Keep backups enabled
 - Review the organization plan before proceeding
