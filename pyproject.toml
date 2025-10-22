@@ -1,0 +1,40 @@
+[project]
+name = "airganizer"
+version = "0.0.1"
+description = "An intelligent file organization tool that uses AI to automatically categorize and organize your files"
+readme = "README.md"
+license = {text = "MIT"}
+authors = [
+    {name = "Adefemi Micheal", email = "adefemi171@gmail.com"}
+]
+keywords = ["file-organization", "ai", "automation", "productivity", "filesystem"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: System :: Filesystems",
+    "Topic :: Utilities",
+]
+requires-python = ">=3.10"
+dependencies = [
+    "openai>=1.0.0",
+    "Pillow>=8.0.0",
+    "click>=8.0.0",
+    "rich>=10.0.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/adefemi171/airganizer"
+Documentation = "https://github.com/adefemi171/airganizer#readme"
+Repository = "https://github.com/adefemi171/airganizer.git"
+Issues = "https://github.com/adefemi171/airganizer/issues"
+
+[project.scripts]
+airganizer = "airganizer.cli:main"
+ai-organize = "airganizer.cli:main"
+airganizer-permissions = "airganizer.permissions_cli:main"
