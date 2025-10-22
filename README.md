@@ -46,7 +46,7 @@ pip install uv
 
 For more installation options, see the [official uv installation guide](https://docs.astral.sh/uv/getting-started/installation/).
 
-**Then set up AI-rganizer:**
+**Then set up ai-rganize:**
 
 ```bash
 # 1. Clone the repository
@@ -196,7 +196,7 @@ The tool organizes files into these categories:
 ```text
 ai-rganize/
 ├── __init__.py          # Package initialization
-├── core.py              # Main AI-rganizer class
+├── core.py              # Main ai-rganize class
 ├── cli.py               # Command-line interface
 ├── permissions.py       # Permission handling
 ├── permissions_cli.py   # Permission setup CLI
