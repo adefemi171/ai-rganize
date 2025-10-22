@@ -4,7 +4,7 @@ Permission setup CLI for AIrganizer
 
 import click
 from .permissions import PermissionHandler
-from .core import AIrganizer
+from .core import AI_rganize
 
 
 @click.command()

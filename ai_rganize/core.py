@@ -3,19 +3,16 @@ Core AIrganizer functionality
 """
 
 import os
-import sys
 import json
 import shutil
-import hashlib
 import platform
 from pathlib import Path
-from typing import Dict, List, Tuple, Optional
+from typing import Dict, List, Optional
 from datetime import datetime
 import openai
 from PIL import Image
 import mimetypes
 
-from .utils import Console, Progress, SpinnerColumn, TextColumn, Table, Panel
 from .permissions import PermissionHandler
 
 

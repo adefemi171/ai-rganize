@@ -3,7 +3,6 @@ Command-line interface for AIrganizer
 """
 
 import click
-from pathlib import Path
 from .core import AI_rganize
 from .utils import Console, Panel
 

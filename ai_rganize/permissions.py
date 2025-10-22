@@ -5,7 +5,7 @@ Permission handling for AIrganizer
 import os
 import platform
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Dict, List
 
 
 class PermissionHandler:
@@ -38,20 +38,6 @@ class PermissionHandler:
         print(f"Found {len(accessible_dirs)} accessible directories")
         return True
     
-    def get_accessible_directories(self, target_dirs: Dict[str, Path]) -> List[Tuple[str, Path]]:
-        """Get list of directories we can actually access."""
-        accessible = []
-        
-        for name, path in target_dirs.items():
-            try:
-                if path.exists() and os.access(path, os.R_OK):
-                    # Try to list contents
-                    list(path.iterdir())
-                    accessible.append((name, path))
-            except (PermissionError, OSError):
-                continue
-        
-        return accessible
     
     def get_permission_guide(self) -> str:
         """Get OS-specific permission setup guide."""
