@@ -1,4 +1,4 @@
-# AI-rganizer 🧠📁
+# AI-rganize 🧠📁
 
 An intelligent file organization tool that uses AI to automatically categorize and organize your files. Works on **macOS**, **Linux (Ubuntu, etc.)**, and **Windows**.
 
@@ -50,8 +50,8 @@ For more installation options, see the [official uv installation guide](https://
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/yourusername/ai-rganizer.git
-cd ai-rganizer
+git clone https://github.com/yourusername/ai-rganize.git
+cd ai-rganize
 
 # 2. Create virtual environment with uv (automatically activates)
 uv venv
@@ -64,7 +64,7 @@ uv pip install -e .
 export OPENAI_API_KEY="your_api_key_here"
 
 # 5. Test with dry run
-ai-rganizer --dry-run
+ai-rganize --dry-run
 ```
 
 **What uv does for you:**
@@ -101,18 +101,18 @@ ai-rganizer --dry-run
 **Basic commands:**
 
 ```bash
-ai-rganizer                                    # Organize all common directories
-ai-rganizer --dry-run                         # Dry run (preview without moving files)
-ai-rganizer --directory ~/Documents           # Organize specific directory
-ai-rganizer --max-file-size 5                 # Limit AI analysis to files smaller than 5MB
-ai-rganizer --ai-limit 20 --max-file-size 15  # Limit AI analysis to 20 files and files smaller than 15MB
+ai-rganize                                    # Organize all common directories
+ai-rganize --dry-run                         # Dry run (preview without moving files)
+ai-rganize --directory ~/Documents           # Organize specific directory
+ai-rganize --max-file-size 5                 # Limit AI analysis to files smaller than 5MB
+ai-rganize --ai-limit 20 --max-file-size 15  # Limit AI analysis to 20 files and files smaller than 15MB
 ```
 
 **Alternative: Using uv run (no activation needed):**
 
 ```bash
-uv run ai-rganizer --dry-run
-uv run ai-rganizer --directory ~/Documents
+uv run ai-rganize --dry-run
+uv run ai-rganize --directory ~/Documents
 ```
 
 **Project management with uv:**
@@ -194,7 +194,7 @@ The tool organizes files into these categories:
 ### **Project Structure**
 
 ```text
-ai-rganizer/
+ai-rganize/
 ├── __init__.py          # Package initialization
 ├── core.py              # Main AI-rganizer class
 ├── cli.py               # Command-line interface
@@ -209,8 +209,8 @@ ai-rganizer/
 
 ```bash
 # Clone and setup
-git clone https://github.com/yourusername/ai-rganizer.git
-cd ai-rganizer
+git clone https://github.com/yourusername/ai-rganize.git
+cd ai-rganize
 uv venv
 uv pip install -r requirements.txt
 uv pip install -e .
@@ -219,8 +219,8 @@ uv pip install -e .
 **Development commands:**
 
 ```bash
-ai-rganizer --help               # Test the tool
-ai-rganizer --dry-run           # Test with dry run
+ai-rganize --help               # Test the tool
+ai-rganize --dry-run           # Test with dry run
 uv sync                          # Install/update dependencies
 uv lock --upgrade                # Update lock file
 ```
@@ -230,7 +230,7 @@ uv lock --upgrade                # Update lock file
 1. Fork the repository
 2. Create a feature branch
 3. Make your changes
-4. Test: `ai-rganizer --dry-run`
+4. Test: `ai-rganize --dry-run`
 5. Submit a pull request
 
 ## Troubleshooting
@@ -239,10 +239,10 @@ uv lock --upgrade                # Update lock file
 
 ```bash
 # Check permissions
-ai-rganizer-permissions
+ai-rganize-permissions
 
 # If you get permission errors, try organizing specific directories:
-ai-rganizer --directory ~/Documents
+ai-rganize --directory ~/Documents
 ```
 
 ### API Key Issues
@@ -259,9 +259,9 @@ The tool automatically skips files larger than 10MB for AI analysis to avoid hig
 
 ## Backup and Recovery
 
-- Backups are stored in `~/.ai-rganizer_backup/`
+- Backups are stored in `~/.ai-rganize_backup/`
 - Each backup is timestamped
-- Organization logs are stored in `~/.ai-rganizer_log.json`
+- Organization logs are stored in `~/.ai-rganize_log.json`
 
 ## Requirements
 

@@ -9,7 +9,7 @@ __version__ = "1.0.0"
 __author__ = "AIrganizer Team"
 __email__ = ""
 
-from .core import AI_rganizer
+from .core import AI_rganize
 from .cli import main
 
-__all__ = ["AI_rganizer", "main"]
+__all__ = ["AI_rganize", "main"]

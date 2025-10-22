@@ -19,11 +19,11 @@ from .utils import Console, Progress, SpinnerColumn, TextColumn, Table, Panel
 from .permissions import PermissionHandler
 
 
-class AI_rganizer:
-    """Main AI-rganizer class for intelligent file organization."""
+class AI_rganize:
+    """Main AI-rganize class for intelligent file organization."""
     
     def __init__(self, api_key: Optional[str] = None, max_file_size_mb: int = 10):
-        """Initialize AI-rganizer."""
+        """Initialize AI-rganize."""
         self.api_key = api_key or os.getenv('OPENAI_API_KEY')
         if not self.api_key:
             raise ValueError("OpenAI API key not found. Set OPENAI_API_KEY environment variable.")
