@@ -19,11 +19,11 @@ from .utils import Console, Progress, SpinnerColumn, TextColumn, Table, Panel
 from .permissions import PermissionHandler
 
 
-class AIrganizer:
-    """Main AIrganizer class for intelligent file organization."""
+class AI_rganizer:
+    """Main AI-rganizer class for intelligent file organization."""
     
-    def __init__(self, api_key: Optional[str] = None):
-        """Initialize AIrganizer."""
+    def __init__(self, api_key: Optional[str] = None, max_file_size_mb: int = 10):
+        """Initialize AI-rganizer."""
         self.api_key = api_key or os.getenv('OPENAI_API_KEY')
         if not self.api_key:
             raise ValueError("OpenAI API key not found. Set OPENAI_API_KEY environment variable.")
@@ -31,6 +31,7 @@ class AIrganizer:
         self.client = openai.OpenAI(api_key=self.api_key)
         self.home_dir = Path.home()
         self.target_dirs = self._get_common_directories()
+        self.max_file_size_bytes = max_file_size_mb * 1024 * 1024  # Convert MB to bytes
         
         # Organization categories
         self.categories = {
@@ -254,7 +255,7 @@ class AIrganizer:
             
             # If rule-based fails, use AI (with limit)
             if (category == 'other' and 
-                file_info['size'] < 10 * 1024 * 1024 and 
+                file_info['size'] < self.max_file_size_bytes and 
                 ai_files_processed < use_ai_limit):
                 category = self.categorize_with_ai(file_info)
                 ai_files_processed += 1

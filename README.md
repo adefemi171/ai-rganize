@@ -16,47 +16,60 @@ An intelligent file organization tool that uses AI to automatically categorize a
 ## Installation
 
 ### **Quick Start with uv (Recommended)**
+
+**Why uv?** uv provides fast, reliable Python project management with automatic virtual environment creation, dependency resolution, and lockfile management. It's significantly faster than pip and handles all the complexity of Python environments for you.
+
+**First, install uv:**
+
+**macOS:**
 ```bash
-# 1. Install uv (if not already installed)
-pip install uv
-
-# 2. Clone the repository
-git clone https://github.com/yourusername/airganizer.git
-cd airganizer
-
-# 3. Set up with uv
-python setup.py
-
-# 4. Set up API key
-export OPENAI_API_KEY="your_api_key_here"
-
-# 5. Test with dry run
-uv run airganizer --dry-run
+brew install uv
 ```
 
-### **Alternative: pip installation**
+**Linux:**
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+**Windows:**
+```powershell
+powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
+```
+
+**Alternative (PyPI):**
+```bash
+pip install uv
+```
+
+For more installation options, see the [official uv installation guide](https://docs.astral.sh/uv/getting-started/installation/).
+
+**Then set up AIrganizer:**
 ```bash
 # 1. Clone the repository
-git clone https://github.com/yourusername/airganizer.git
-cd airganizer
+git clone https://github.com/yourusername/ai-rganizer.git
+cd ai-rganizer
 
-# 2. Install dependencies
-pip install -r requirements.txt
+# 2. Create virtual environment with uv (automatically activates)
+uv venv
 
-# 3. Install in development mode
-pip install -e .
+# 3. Install dependencies and package
+uv pip install -r requirements.txt
+uv pip install -e .
 
 # 4. Set up API key
 export OPENAI_API_KEY="your_api_key_here"
 
 # 5. Test with dry run
-airganizer --dry-run
+ai-rganizer --dry-run
 ```
 
-### **From PyPI (when published)**
-```bash
-pip install airganizer
-```
+**What uv does for you:**
+- 🚀 **Automatic virtual environment creation** (`.venv/` directory)
+- 📦 **Dependency resolution and installation** from `pyproject.toml`
+- 🔒 **Lockfile management** (`uv.lock`) for reproducible builds
+- ⚡ **Fast package installation** (10-100x faster than pip)
+- 🛠️ **Project management** with `uv sync`, `uv add`, `uv remove`
+- 🐍 **Python version management** with `uv python install`
 
 ### **Manual Installation**
 
@@ -79,47 +92,30 @@ pip install airganizer
 
 ### Basic Usage
 
-**With uv (recommended):**
+**Basic commands:**
 ```bash
-# Organize all common directories (Documents, Desktop, Downloads, etc.)
-uv run airganizer
-
-# Dry run (preview without moving files)
-uv run airganizer --dry-run
-
-# Organize specific directory
-uv run airganizer --directory ~/Documents
-
-# Skip backup (not recommended)
-uv run airganizer --no-backup
+ai-rganizer                                    # Organize all common directories
+ai-rganizer --dry-run                         # Dry run (preview without moving files)
+ai-rganizer --directory ~/Documents           # Organize specific directory
+ai-rganizer --max-file-size 5                 # Limit AI analysis to files smaller than 5MB
+ai-rganizer --ai-limit 20 --max-file-size 15  # Limit AI analysis to 20 files and files smaller than 15MB
 ```
 
-**Direct uv commands:**
+**Alternative: Using uv run (no activation needed):**
 ```bash
-# Run AIrganizer with any options
-uv run airganizer --help
-uv run airganizer --dry-run
-uv run airganizer --directory ~/Documents
-
-# Install/update dependencies
-uv sync
-uv lock --upgrade
+uv run ai-rganizer --dry-run
+uv run ai-rganizer --directory ~/Documents
 ```
 
-**With pip:**
+**Project management with uv:**
 ```bash
-# Organize all common directories (Documents, Desktop, Downloads, etc.)
-airganizer
-
-# Dry run (preview without moving files)
-airganizer --dry-run
-
-# Organize specific directory
-airganizer --directory ~/Documents
-
-# Skip backup (not recommended)
-airganizer --no-backup
+uv sync                    # Install/update dependencies
+uv lock --upgrade         # Update lock file
+uv add package-name       # Add new dependency
+uv remove package-name    # Remove dependency
+uv tree                   # View dependency tree
 ```
+
 
 ### Command Line Options
 
@@ -128,6 +124,7 @@ airganizer --no-backup
 - `--dry-run`: Show organization plan without moving files
 - `--backup/--no-backup`: Create backup before organizing (default: backup)
 - `--ai-limit`: Maximum number of files to analyze with AI (default: 50)
+- `--max-file-size`: Maximum file size in MB for AI analysis (default: 10)
 - `--no-ai`: Disable AI categorization, use only rule-based
 
 ### Environment Variables
@@ -187,7 +184,7 @@ The tool organizes files into these categories:
 
 ### **Project Structure**
 ```
-airganizer/
+ai-rganizer/
 ├── __init__.py          # Package initialization
 ├── core.py              # Main AIrganizer class
 ├── cli.py               # Command-line interface
@@ -196,57 +193,42 @@ airganizer/
 └── utils.py             # Utility functions
 ```
 
-### **Development Setup with uv**
+### **Development & Contributing**
+
+**Setup for development:**
 ```bash
-# 1. Install uv (if not already installed)
-pip install uv
-
-# 2. Clone and setup
-git clone https://github.com/yourusername/airganizer.git
-cd airganizer
-python setup.py
-
-# 3. Development commands
-uv run airganizer --help         # Run AIrganizer
-uv sync                          # Install dependencies
-uv lock --upgrade                # Update dependencies
+# Clone and setup
+git clone https://github.com/yourusername/ai-rganizer.git
+cd ai-rganizer
+uv venv
+uv pip install -r requirements.txt
+uv pip install -e .
 ```
 
-### **Development Setup with pip**
+**Development commands:**
 ```bash
-# 1. Install in development mode
-pip install -e .
-
-# 2. Run AIrganizer
-airganizer --help
+ai-rganizer --help               # Test the tool
+ai-rganizer --dry-run           # Test with dry run
+uv sync                          # Install/update dependencies
+uv lock --upgrade                # Update lock file
 ```
 
-### **Contributing**
+**Contributing:**
 1. Fork the repository
 2. Create a feature branch
 3. Make your changes
-4. Test your changes: `uv run airganizer --dry-run`
+4. Test: `ai-rganizer --dry-run`
 5. Submit a pull request
-
-### **Available Commands**
-
-**With uv:**
-- `uv run airganizer` - Run AIrganizer
-- `uv sync` - Install/update dependencies
-- `uv lock --upgrade` - Update lock file
-
-**With pip:**
-- `airganizer` - Run AIrganizer
 
 ## Troubleshooting
 
 ### Permission Issues
 ```bash
 # Check permissions
-airganizer-permissions
+ai-rganizer-permissions
 
 # If you get permission errors, try organizing specific directories:
-airganizer --directory ~/Documents
+ai-rganizer --directory ~/Documents
 ```
 
 ### API Key Issues
@@ -261,9 +243,9 @@ The tool automatically skips files larger than 10MB for AI analysis to avoid hig
 
 ## Backup and Recovery
 
-- Backups are stored in `~/.airganizer_backup/`
+- Backups are stored in `~/.ai-rganizer_backup/`
 - Each backup is timestamped
-- Organization logs are stored in `~/.airganizer_log.json`
+- Organization logs are stored in `~/.ai-rganizer_log.json`
 
 ## Requirements
 

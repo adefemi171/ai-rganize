@@ -4,7 +4,7 @@ Command-line interface for AIrganizer
 
 import click
 from pathlib import Path
-from .core import AIrganizer
+from .core import AI_rganizer
 from .utils import Console, Panel
 
 
@@ -14,20 +14,21 @@ from .utils import Console, Panel
 @click.option('--dry-run', is_flag=True, help='Show organization plan without moving files')
 @click.option('--backup/--no-backup', default=True, help='Create backup before organizing')
 @click.option('--ai-limit', default=50, help='Maximum number of files to analyze with AI (default: 50)')
+@click.option('--max-file-size', default=10, help='Maximum file size in MB for AI analysis (default: 10)')
 @click.option('--no-ai', is_flag=True, help='Disable AI categorization, use only rule-based')
-def main(api_key, directory, dry_run, backup, ai_limit, no_ai):
-    """AIrganizer - Intelligently organize your files using AI."""
+def main(api_key, directory, dry_run, backup, ai_limit, max_file_size, no_ai):
+    """AI-rganizer - Intelligently organize your files using AI."""
     
     console = Console()
     
     console.print(Panel.fit(
-        "[bold blue]AIrganizer[/bold blue]\n"
+        "[bold blue]AI-rganizer[/bold blue]\n"
         "Intelligently organize your files using AI",
         border_style="blue"
     ))
     
     try:
-        organizer = AIrganizer(api_key)
+        organizer = AI_rganizer(api_key, max_file_size_mb=max_file_size)
     except ValueError as e:
         console.print(f"[red]Error: {e}[/red]")
         return
