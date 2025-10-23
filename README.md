@@ -115,6 +115,26 @@ uv run ai-rganize --dry-run
 uv run ai-rganize --directory ~/Documents
 ```
 
+### Advanced Usage
+
+**Model selection and cost control:**
+
+```bash
+# Use different OpenAI models
+ai-rganize --openai-model gpt-4o-mini --dry-run    # Cheaper, still intelligent
+ai-rganize --openai-model gpt-3.5-turbo --dry-run  # Cheapest option
+ai-rganize --openai-model gpt-4 --dry-run          # Most expensive, highest quality
+
+# LLM provider selection (future-ready)
+ai-rganize --llm-provider openai --dry-run         # OpenAI (default, currently supported)
+# ai-rganize --llm-provider claude --dry-run      # Claude (coming soon)
+# ai-rganize --llm-provider gemini --dry-run      # Gemini (coming soon)
+
+# Control batch processing and costs
+ai-rganize --batch-size 3 --max-cost 0.5 --dry-run  # Smaller batches, lower cost limit
+ai-rganize --ai-limit 100 --batch-size 10 --dry-run # Process more files in larger batches
+```
+
 **Project management with uv:**
 
 ```bash

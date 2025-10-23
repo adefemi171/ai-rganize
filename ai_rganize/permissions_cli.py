@@ -3,7 +3,6 @@ Permission setup CLI for AIrganizer
 """
 
 import click
-from .permissions import PermissionHandler
 from .core import AI_rganize
 
 
@@ -16,11 +15,10 @@ def main():
     
     # Create a temporary organizer to get directories
     try:
-        organizer = AIrganizer()
+        organizer = AI_rganize(use_ai=False)  # Use rule-based to avoid API key requirement
         target_dirs = organizer.target_dirs
     except Exception as e:
         print(f"Error: {e}")
-        print("Please set your OpenAI API key first.")
         return
     
     handler = PermissionHandler()
