@@ -7,7 +7,7 @@ from typing import Dict, List, Optional
 from pathlib import Path
 
 from .base_organizer import BaseOrganizer
-from .ai_client import create_ai_client, BaseAIClient
+from ..ai_client import create_ai_client, BaseAIClient
 
 
 class AIOrganizer(BaseOrganizer):

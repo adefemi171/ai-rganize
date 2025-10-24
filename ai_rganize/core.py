@@ -6,9 +6,7 @@ from typing import Dict, List, Optional
 from pathlib import Path
 
 # Import all the modular components
-from .base_organizer import BaseOrganizer
-from .rule_based_organizer import RuleBasedOrganizer
-from .ai_organizer import AIOrganizer
+from .organizers import BaseOrganizer, RuleBasedOrganizer, AIOrganizer
 from .rate_limiting import RateLimiter
 from .ai_client import create_ai_client, BaseAIClient
 from .file_analysis import FileAnalyzer

@@ -9,8 +9,8 @@ from pathlib import Path
 from typing import Dict, List, Optional
 from datetime import datetime
 
-from .permissions import PermissionHandler
-from .file_analysis import FileAnalyzer
+from ..permissions import PermissionHandler
+from ..file_analysis import FileAnalyzer
 
 
 class BaseOrganizer:

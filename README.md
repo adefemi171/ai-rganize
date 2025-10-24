@@ -2,6 +2,8 @@
 
 An intelligent file organization tool that uses AI to automatically categorize and organize your files. Works on **macOS**, **Linux (Ubuntu, etc.)**, and **Windows**.
 
+Name was inspired by the music I was listening to when this idea popped in my head, the music is [Organize](https://open.spotify.com/track/2wgvxtggKVzPkl0smF2UzI) by Asake
+
 ## Features
 
 - 🤖 **AI-Powered Categorization**: Uses OpenAI's GPT to intelligently categorize files based on content and metadata
@@ -19,29 +21,41 @@ An intelligent file organization tool that uses AI to automatically categorize a
 
 **Why uv?** uv provides fast, reliable Python project management with automatic virtual environment creation, dependency resolution, and lockfile management. It's significantly faster than pip and handles all the complexity of Python environments for you.
 
-**First, install uv:**
+**First, install uv and ffmpeg:**
 
 **macOS:**
 ```bash
-brew install uv
+brew install uv ffmpeg
 ```
 
 **Linux:**
 
 ```bash
+# Install uv
 curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Install ffmpeg
+sudo apt update && sudo apt install ffmpeg  # Ubuntu/Debian
+# or
+sudo yum install ffmpeg  # CentOS/RHEL
 ```
 
 **Windows:**
 
 ```powershell
+# Install uv
 powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
+
+# Install ffmpeg
+choco install ffmpeg
+# or download from https://ffmpeg.org/download.html
 ```
 
 **Alternative (PyPI):**
 
 ```bash
 pip install uv
+# Then install ffmpeg separately for your platform
 ```
 
 For more installation options, see the [official uv installation guide](https://docs.astral.sh/uv/getting-started/installation/).
@@ -53,17 +67,22 @@ For more installation options, see the [official uv installation guide](https://
 git clone https://github.com/yourusername/ai-rganize.git
 cd ai-rganize
 
-# 2. Create virtual environment with uv (automatically activates)
+# 2. Create virtual environment with uv
 uv venv
 
-# 3. Install dependencies and package
+# 3. Activate the virtual environment
+source .venv/bin/activate  # On macOS/Linux
+# or
+.venv\Scripts\activate     # On Windows
+
+# 4. Install dependencies and package
 uv pip install -r requirements.txt
 uv pip install -e .
 
-# 4. Set up API key
+# 5. Set up API key
 export OPENAI_API_KEY="your_api_key_here"
 
-# 5. Test with dry run
+# 6. Test with dry run
 ai-rganize --dry-run
 ```
 
@@ -229,9 +248,12 @@ ai-rganize/
 
 ```bash
 # Clone and setup
-git clone https://github.com/yourusername/ai-rganize.git
+git clone https://github.com/adefemi171/ai-rganize.git
 cd ai-rganize
 uv venv
+source .venv/bin/activate  # On macOS/Linux
+# or
+.venv\Scripts\activate     # On Windows
 uv pip install -r requirements.txt
 uv pip install -e .
 ```
@@ -271,6 +293,16 @@ ai-rganize --directory ~/Documents
 # Make sure your API key is set:
 export OPENAI_API_KEY="your_key_here"
 # Or check your .env file
+```
+
+### Video/Audio Analysis Issues
+
+```bash
+# If video/audio analysis fails, check ffmpeg:
+ffmpeg -version
+
+# Test with a small file first:
+ai-rganize --directory ~/Desktop --ai-limit 1 --dry-run --verbose
 ```
 
 ### Large Files

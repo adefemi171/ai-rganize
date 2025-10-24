@@ -5,7 +5,8 @@ Command-line interface for AIrganizer
 import click
 from pathlib import Path
 from .organizers import RuleBasedOrganizer, AIOrganizer
-from .utils import Console, Panel
+from rich.console import Console
+from rich.panel import Panel
 
 
 @click.command()

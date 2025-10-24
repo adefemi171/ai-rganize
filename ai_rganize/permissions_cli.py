@@ -3,7 +3,9 @@ Permission setup CLI for AIrganizer
 """
 
 import click
-from .core import AI_rganize
+from pathlib import Path
+from .organizer import BaseOrganizer
+from .permissions import PermissionHandler
 
 
 @click.command()
@@ -15,7 +17,7 @@ def main():
     
     # Create a temporary organizer to get directories
     try:
-        organizer = AI_rganize(use_ai=False)  # Use rule-based to avoid API key requirement
+        organizer = BaseOrganizer()  # Use base organizer to avoid API key requirement
         target_dirs = organizer.target_dirs
     except Exception as e:
         print(f"Error: {e}")

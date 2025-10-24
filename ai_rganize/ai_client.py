@@ -58,6 +58,17 @@ class OpenAIClient(BaseAIClient):
         }
         return model_costs.get(self.model, 0.01)  # Default to GPT-4o pricing
     
+    def get_document_analysis_cost(self, file_size_mb: float) -> float:
+        """Calculate cost for document analysis using OpenAI File Search API."""
+        # OpenAI File Search API costs:
+        # - File upload: $0.10 per file
+        # - Assistant usage: $0.01 per 1K tokens (GPT-4o)
+        # - File storage: $0.10 per GB per day (minimal for our use)
+        
+        base_cost = 0.10  # File upload cost
+        processing_cost = (file_size_mb * 0.01)  # Processing cost based on file size
+        return base_cost + processing_cost
+    
     def categorize_files(self, file_batch: List[Dict], verbose: bool = False) -> List[str]:
         """Categorize files using OpenAI API."""
         from .file_analysis import FileAnalyzer
@@ -67,7 +78,7 @@ class OpenAIClient(BaseAIClient):
         
         for file_info in file_batch:
             content_preview = analyzer.get_file_content_preview(file_info['path'])
-            batch_content.append(f"File: {file_info['name']} (Location: {file_info['path'].parent.name}, Preview: {content_preview})\n")
+            batch_content.append(f"File: {file_info['name']} (Location: {file_info['path'].parent.name}, Content: {content_preview})\n")
         
         prompt = self._create_categorization_prompt(batch_content, len(file_batch))
         
@@ -131,24 +142,27 @@ class OpenAIClient(BaseAIClient):
     def _create_categorization_prompt(self, batch_content: str, file_count: int) -> str:
         """Create the AI prompt for file categorization."""
         return f"""
-                Analyze these {file_count} files and create meaningful, intelligent folder categories based on their ACTUAL PURPOSE, CONTENT, and SIMILARITIES.
+                Analyze these {file_count} files and their ACTUAL CONTENT to create meaningful, intelligent folder categories based on their PURPOSE, CONTENT, and SIMILARITIES.
                 
                 FILES TO ANALYZE:
                 {''.join(batch_content)}
                 
                 CRITICAL INTELLIGENCE REQUIREMENTS:
-                1. DETECT SIMILARITIES: Look for files that belong together (same person, family, project, theme, purpose)
-                2. CREATE CONSISTENT NAMES: Use the SAME folder name for similar files across different subdirectories
-                3. GROUP INTELLIGENTLY: Don't just categorize by file type - group by actual purpose and relationships
-                4. CONSIDER CONTEXT: Look at file locations, names, content, and metadata to understand relationships
-                5. DETECT FAMILY RELATIONSHIPS: Group files from the same family (look for common surnames, prefixes, or patterns that indicate relationships)
-                6. MERGE SIMILAR PATTERNS: Look for common surnames, prefixes, or patterns that indicate relationships
-                7. VISUAL SIMILARITY DETECTION: For images, detect similar faces, objects, or scenes and group them together
-                8. SCREENSHOT CONTENT ANALYSIS: For screenshots, detect programming content, UI elements, or similar applications and group accordingly
-                9. FOLDER MERGING INTELLIGENCE: Detect when entire folders should be merged (look for folders containing related content that should be consolidated)
-                10. INTELLIGENT REORGANIZATION: Create new folder structures that merge related subdirectories and files intelligently
-                11. FAMILY NAME DETECTION: Look for shared surnames (e.g., files with common family names should be grouped together)
-                12. SURNAME PATTERN MATCHING: If files share the same surname or family name, use the SAME folder name regardless of their current subdirectory
+                1. READ ACTUAL CONTENT: Analyze the real content of files (PDF text, document content, image descriptions, video content, audio transcripts)
+                2. DETECT SIMILARITIES: Look for files that belong together (same person, family, project, theme, purpose)
+                3. CREATE CONSISTENT NAMES: Use the SAME folder name for similar files across different subdirectories
+                4. GROUP INTELLIGENTLY: Don't just categorize by file type - group by actual purpose and relationships
+                5. CONSIDER CONTEXT: Look at file locations, names, content, and metadata to understand relationships
+                6. FOLDER STRUCTURE ANALYSIS: Analyze existing folder structure to understand relationships and hierarchies
+                7. CONTENT-BASED GROUPING: Group files by their actual content and purpose, not just file extensions
+                8. VISUAL SIMILARITY DETECTION: For images, detect similar faces, objects, or scenes and group them together
+                9. VIDEO CONTENT ANALYSIS: For videos, analyze content type (tutorials, meetings, recordings) and group accordingly
+                10. AUDIO CONTENT ANALYSIS: For audio, analyze transcript content (meetings, music, speech) and group by purpose
+                11. SCREENSHOT CONTENT ANALYSIS: For screenshots, detect programming content, UI elements, or similar applications and group accordingly
+                12. FOLDER MERGING INTELLIGENCE: Detect when entire folders should be merged (look for folders containing related content that should be consolidated)
+                13. INTELLIGENT REORGANIZATION: Create new folder structures that merge related subdirectories and files intelligently
+                14. FAMILY NAME DETECTION: Look for shared surnames (e.g., files with common family names should be grouped together)
+                15. SURNAME PATTERN MATCHING: If files share the same surname or family name, use the SAME folder name regardless of their current subdirectory
                 
                 SIMILARITY DETECTION PATTERNS:
                 - Same person's documents (resumes, profiles, applications) → Use consistent person-based folder names
@@ -169,6 +183,8 @@ class OpenAIClient(BaseAIClient):
                 - FAMILY SURNAME DETECTION: Files with shared surnames → "Family_Documents" (group by family relationship)
                 - VISUAL GROUPING: Photos with same person's face → "Personal_Photos" or "Family_Member_Photos"
                 - SCREENSHOT GROUPING: Programming code screenshots → "Programming_Screenshots" or "Code_Development_Screenshots"
+                - VIDEO GROUPING: Tutorial videos → "Tutorial_Videos" or "Educational_Content"
+                - AUDIO GROUPING: Meeting recordings → "Meeting_Recordings" or "Work_Audio"
                 - FOLDER MERGING: Related folders containing similar content → "International_Professional_Documents" or "Multi_Country_Applications"
                 - INTELLIGENT REORGANIZATION: Related subdirectories → Merge into single organized folder structure
                 - All Microsoft project files → "Microsoft_Project_Files" 
@@ -176,6 +192,9 @@ class OpenAIClient(BaseAIClient):
                 - All work meeting screenshots → "Work_Meeting_Screenshots"
                 - All financial documents from 2024 → "Financial_Records_2024"
                 - All creative design work → "Creative_Design_Projects"
+                - All tutorial videos → "Educational_Videos"
+                - All meeting recordings → "Meeting_Recordings"
+                - All music files → "Music_Collection"
                 - All technical documentation → "Technical_Documentation"
                 - All wedding event photos → "Wedding_Event_Photos"
                 - All software engineering job applications → "Software_Engineering_Applications"
