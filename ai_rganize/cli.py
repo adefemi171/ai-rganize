@@ -6,6 +6,7 @@ import click
 from pathlib import Path
 from .organizers import RuleBasedOrganizer, AIOrganizer
 from rich.console import Console
+from rich.prompt import Confirm
 from rich.panel import Panel
 
 
@@ -92,14 +93,14 @@ def main(api_key, directory, dry_run, backup, ai_limit, max_file_size, batch_siz
         return
     
     # Confirm with user
-    if not console.confirm("Do you want to proceed with the organization?"):
+    if not Confirm.ask("Do you want to proceed with the organization?"):
         console.print("[yellow]Organization cancelled.[/yellow]")
         return
     
     # Create backup if requested
     if backup:
         if not organizer.create_backup(all_files):
-            if not console.confirm("Backup failed. Continue without backup?"):
+            if not Confirm.ask("Backup failed. Continue without backup?"):
                 console.print("[yellow]Organization cancelled.[/yellow]")
                 return
     
