@@ -83,27 +83,20 @@ class DocumentAnalyzer:
     
     def _should_use_openai_api(self, file_path: Path, file_size_mb: float) -> bool:
         """Determine if file should use OpenAI API based on complexity indicators."""
-        # Use OpenAI API for:
-        # 1. Large files (>2MB) that might need advanced processing
-        # 2. Files that might be scanned (no text extraction with local methods)
-        # 3. Complex documents (based on filename patterns)
-        
-        if file_size_mb > 2.0:  # Large files
-            return True
-        
-        # Check for scanned document indicators in filename
+        # Always use OpenAI API for AI analysis to ensure best results
+        # Check for scanned document indicators in filename (always use API for these)
         filename_lower = file_path.name.lower()
         scanned_indicators = ['scan', 'scanned', 'image', 'photo', 'picture']
         if any(indicator in filename_lower for indicator in scanned_indicators):
             return True
         
-        # Check for complex document indicators
+        # Check for complex document indicators (always use API for these)
         complex_indicators = ['report', 'manual', 'handbook', 'guide', 'specification']
         if any(indicator in filename_lower for indicator in complex_indicators):
             return True
         
-        # Default to local extraction for simple files
-        return False
+        # Default to OpenAI API for all files (no size restrictions)
+        return True
     
     def _analyze_pdf_with_openai_api(self, file_path: Path) -> str:
         """Analyze PDF using OpenAI File Search API."""

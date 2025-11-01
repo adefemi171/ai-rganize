@@ -16,7 +16,7 @@ from rich.panel import Panel
 @click.option('--dry-run', is_flag=True, help='Show organization plan without moving files')
 @click.option('--backup/--no-backup', default=False, help='Create backup before organizing (default: no-backup)')
 @click.option('--ai-limit', default=50, help='Maximum number of files to analyze with AI (default: 50)')
-@click.option('--max-file-size', default=10, help='Maximum file size in MB for AI analysis (default: 10)')
+@click.option('--max-file-size', default=None, type=int, help='Maximum file size in MB for content analysis API calls (cost control). Files larger than this will use metadata/filename only. If not set, no size limit is applied.')
 @click.option('--batch-size', default=5, help='Number of files to process in each AI batch. Auto-calculated when --max-folders is set (default: 5)')
 @click.option('--max-cost', default=1.0, help='Maximum cost in USD for AI processing (default: 1.0)')
 @click.option('--max-folders', type=int, help='Maximum number of folders to create (e.g., 6 folders for 200 files). If not specified, LLM creates as many folders as needed.')
@@ -50,10 +50,12 @@ def main(api_key, directory, dry_run, backup, ai_limit, max_file_size, batch_siz
             console.print(f"[blue]Using default model for {llm_provider}: {model}[/blue]")
     
     try:
+        # Set default max_file_size_mb to None if not specified (no limit)
+        max_file_size_mb = max_file_size if max_file_size is not None else 10000  # Very high default, effectively no limit
         if no_ai:
-            organizer = RuleBasedOrganizer(max_file_size_mb=max_file_size)
+            organizer = RuleBasedOrganizer(max_file_size_mb=max_file_size_mb)
         else:
-            organizer = AIOrganizer(api_key, max_file_size_mb=max_file_size, 
+            organizer = AIOrganizer(api_key, max_file_size_mb=max_file_size_mb, 
                                   batch_size=batch_size, max_cost=max_cost, model=model, 
                                   llm_provider=llm_provider, max_folders=max_folders)
     except ValueError as e:

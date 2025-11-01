@@ -6,12 +6,13 @@ Name was inspired by the music I was listening to when this idea popped in my he
 
 ## Features
 
-- 🤖 **AI-Powered Categorization**: Uses OpenAI's GPT to intelligently categorize files based on content and metadata
+- 🤖 **AI-Powered Categorization**: Uses AI (OpenAI, Claude, Gemini, Ollama, Mistral) to intelligently categorize files based on content and metadata
 - 📂 **Multiple Directory Support**: Organizes common directories (Documents, Desktop, Downloads, etc.)
+- 🎯 **Content Analysis**: Analyzes PDFs, Word docs, images, videos, and audio files for intelligent categorization
+- 📁 **Folder Limit Control**: Specify maximum number of folders to create (e.g., organize 200 files into 6 folders)
 - 🔒 **Cross-Platform**: Works on macOS, Linux (Ubuntu, etc.), and Windows
 - 🔒 **Permission Handling**: Properly handles file access permissions across platforms
-- 💾 **Backup System**: Creates automatic backups before moving files
-- 🎯 **Smart Organization**: Groups files into logical categories (documents, images, videos, audio, etc.)
+- 💾 **Backup System**: Optional automatic backups before moving files
 - 🖥️ **Terminal Interface**: Clean, user-friendly command-line interface
 - 🔍 **Dry Run Mode**: Preview organization plan before making changes
 
@@ -24,6 +25,7 @@ Name was inspired by the music I was listening to when this idea popped in my he
 **First, install uv and ffmpeg:**
 
 **macOS:**
+
 ```bash
 brew install uv ffmpeg
 ```
@@ -79,8 +81,11 @@ source .venv/bin/activate  # On macOS/Linux
 uv pip install -r requirements.txt
 uv pip install -e .
 
-# 5. Set up API key
-export OPENAI_API_KEY="your_api_key_here"
+# 5. Set up API key (choose your provider)
+export OPENAI_API_KEY="your_api_key_here"        # For OpenAI
+# export ANTHROPIC_API_KEY="your_api_key_here"   # For Claude
+# export GEMINI_API_KEY="your_api_key_here"      # For Gemini
+# export MISTRAL_API_KEY="your_api_key_here"     # For Mistral
 
 # 6. Test with dry run
 ai-rganize --dry-run
@@ -94,24 +99,6 @@ ai-rganize --dry-run
 - ⚡ **Fast package installation** (10-100x faster than pip)
 - 🛠️ **Project management** with `uv sync`, `uv add`, `uv remove`
 - 🐍 **Python version management** with `uv python install`
-
-### **Manual Installation**
-
-1. **Install dependencies**:
-
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-2. **Get OpenAI API Key**:
-   - Visit [OpenAI Platform](https://platform.openai.com/api-keys)
-   - Create a new API key
-   - Add it to your environment or `.env` file
-
-3. **Set up permissions**:
-   - **macOS**: System Preferences > Security & Privacy > Privacy
-   - **Linux**: Check file ownership and permissions
-   - **Windows**: Run as Administrator if needed
 
 ## Usage
 
@@ -136,22 +123,34 @@ uv run ai-rganize --directory ~/Documents
 
 ### Advanced Usage
 
-**Model selection and cost control:**
+**LLM Provider Selection:**
 
 ```bash
-# Use different OpenAI models
-ai-rganize --openai-model gpt-4o-mini --dry-run    # Cheaper, still intelligent
-ai-rganize --openai-model gpt-3.5-turbo --dry-run  # Cheapest option
-ai-rganize --openai-model gpt-4 --dry-run          # Most expensive, highest quality
+# OpenAI (default)
+ai-rganize --llm-provider openai --model gpt-4o --dry-run
 
-# LLM provider selection (future-ready)
-ai-rganize --llm-provider openai --dry-run         # OpenAI (default, currently supported)
-# ai-rganize --llm-provider claude --dry-run      # Claude (coming soon)
-# ai-rganize --llm-provider gemini --dry-run      # Gemini (coming soon)
+# Claude (Latest: Claude Sonnet 4.5)
+ai-rganize --llm-provider claude --dry-run
+
+# Gemini (Latest: Gemini 2.5 Pro)
+ai-rganize --llm-provider gemini --dry-run
+
+# Ollama (Local models)
+ai-rganize --llm-provider ollama --model llama3.1 --dry-run
+
+# Mistral
+ai-rganize --llm-provider mistral --dry-run
+```
+
+**Folder Limits and Batch Control:**
+
+```bash
+# Organize 200 files into exactly 6 folders
+ai-rganize --directory ~/Desktop/files --max-folders 6 --dry-run
 
 # Control batch processing and costs
-ai-rganize --batch-size 3 --max-cost 0.5 --dry-run  # Smaller batches, lower cost limit
-ai-rganize --ai-limit 100 --batch-size 10 --dry-run # Process more files in larger batches
+ai-rganize --batch-size 3 --max-cost 0.5 --dry-run
+ai-rganize --ai-limit 100 --batch-size 10 --dry-run
 ```
 
 **Project management with uv:**
@@ -166,43 +165,51 @@ uv tree                   # View dependency tree
 
 ### Command Line Options
 
-- `--api-key`: OpenAI API key (or set OPENAI_API_KEY env var)
+- `--api-key`: API key for selected LLM provider (or set corresponding env var)
 - `--directory, -d`: Specific directory to organize
 - `--dry-run`: Show organization plan without moving files
-- `--backup/--no-backup`: Create backup before organizing (default: backup)
-- `--ai-limit`: Maximum number of files to analyze with AI (default: 50)
+- `--backup/--no-backup`: Create backup before organizing (default: no-backup)
+- `--llm-provider`: LLM provider to use - openai, claude, gemini, ollama, mistral (default: openai)
+- `--model`: Model name (defaults vary by provider)
+- `--max-folders`: Maximum number of folders to create (auto-calculates batch size)
+- `--batch-size`: Files per batch (auto-calculated when --max-folders is set)
+- `--ai-limit`: Maximum files to analyze with AI (default: 50)
 - `--max-file-size`: Maximum file size in MB for AI analysis (default: 10)
+- `--max-cost`: Maximum cost in USD for AI processing (default: 1.0)
 - `--no-ai`: Disable AI categorization, use only rule-based
+- `--verbose, -v`: Show detailed processing information
 
 ### Environment Variables
 
+Set the API key for your chosen provider:
+
 ```bash
-export OPENAI_API_KEY="your_api_key_here"
+export OPENAI_API_KEY="your_api_key_here"        # For OpenAI
+export ANTHROPIC_API_KEY="your_api_key_here"     # For Claude
+export GEMINI_API_KEY="your_api_key_here"        # For Gemini
+export MISTRAL_API_KEY="your_api_key_here"       # For Mistral
+export OLLAMA_BASE_URL="http://localhost:11434"  # For Ollama (optional, default shown)
 ```
 
 Or create a `.env` file:
 
 ```env
 OPENAI_API_KEY=your_api_key_here
+ANTHROPIC_API_KEY=your_api_key_here
+GEMINI_API_KEY=your_api_key_here
 ```
 
 ## How It Works
 
 1. **File Scanning**: Scans target directories for files
-2. **AI Analysis**: Uses OpenAI GPT to analyze file content and metadata
-3. **Categorization**: Groups files into logical categories:
-   - 📄 Documents (PDFs, Word docs, text files)
-   - 🖼️ Images (photos, graphics, screenshots)
-   - 🎬 Videos (movie files, recordings)
-   - 🎵 Audio (music, podcasts, recordings)
-   - 📦 Archives (zip files, compressed files)
-   - 💻 Code (programming files)
-   - 📊 Spreadsheets (Excel, CSV files)
-   - 📽️ Presentations (PowerPoint, Keynote)
-   - 📁 Other (miscellaneous files)
-
-4. **Organization**: Moves files to appropriate category folders
-5. **Logging**: Records all changes for reference
+2. **Content Analysis**: Analyzes file content using AI:
+   - 📄 **Documents**: Extracts text from PDFs and Word docs
+   - 🖼️ **Images**: Uses Vision API to analyze image content
+   - 🎬 **Videos**: Extracts frames and analyzes video content
+   - 🎵 **Audio**: Transcribes and analyzes audio content
+3. **AI Categorization**: Uses your chosen LLM provider to intelligently categorize files
+4. **Organization**: Moves files to appropriate category folders based on content and purpose
+5. **Smart Grouping**: Detects relationships (family, projects, themes) and groups accordingly
 
 ## Safety Features
 
@@ -234,12 +241,24 @@ The tool organizes files into these categories:
 
 ```text
 ai-rganize/
-├── __init__.py          # Package initialization
-├── core.py              # Main ai-rganize class
+├── __init__.py
 ├── cli.py               # Command-line interface
-├── permissions.py       # Permission handling
-├── permissions_cli.py   # Permission setup CLI
-└── utils.py             # Utility functions
+├── core.py              # Main entry point
+├── ai_client.py         # LLM provider clients
+├── file_analysis.py     # File content analysis
+├── organizer/           # Organization strategies
+│   ├── base_organizer.py
+│   ├── ai_organizer.py
+│   └── rule_based_organizer.py
+├── analyzers/           # Content analyzers
+│   ├── document_analyzer.py
+│   ├── image_analyzer.py
+│   ├── video_analyzer.py
+│   ├── audio_analyzer.py
+│   └── text_analyzer.py
+├── permissions/         # Permission handling
+├── utils/               # Utilities
+└── rate_limiting.py     # Rate limiting and cost tracking
 ```
 
 ### **Development & Contributing**
@@ -290,8 +309,10 @@ ai-rganize --directory ~/Documents
 ### API Key Issues
 
 ```bash
-# Make sure your API key is set:
-export OPENAI_API_KEY="your_key_here"
+# Make sure your API key is set for your chosen provider:
+export OPENAI_API_KEY="your_key_here"        # For OpenAI
+export ANTHROPIC_API_KEY="your_key_here"     # For Claude
+export GEMINI_API_KEY="your_key_here"        # For Gemini
 # Or check your .env file
 ```
 
@@ -307,26 +328,13 @@ ai-rganize --directory ~/Desktop --ai-limit 1 --dry-run --verbose
 
 ### Large Files
 
-The tool automatically skips files larger than 10MB for AI analysis to avoid high API costs. These files are categorized using rule-based methods.
+All files are included for organization and AI analysis regardless of size. There are no file size restrictions - all files will receive full AI content analysis. The `--max-file-size` flag is deprecated and no longer restricts file analysis.
 
 ## Backup and Recovery
 
 - Backups are stored in `~/.ai-rganize_backup/`
 - Each backup is timestamped
 - Organization logs are stored in `~/.ai-rganize_log.json`
-
-## Requirements
-
-- Python 3.7+
-- OpenAI API key
-- Internet connection (for AI analysis)
-
-## Dependencies
-
-- `openai`: AI categorization
-- `click`: Command-line interface
-- `rich`: Beautiful terminal output
-- `Pillow`: Image file analysis
 
 ## License
 

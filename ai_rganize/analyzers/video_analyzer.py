@@ -108,9 +108,6 @@ class VideoAnalyzer:
     def _get_image_base64(self, file_path: Path) -> Optional[str]:
         """Get base64 encoded image for OpenAI Vision API."""
         try:
-            if file_path.stat().st_size > self.max_file_size_bytes:
-                return None
-            
             import base64
             with open(file_path, "rb") as image_file:
                 return base64.b64encode(image_file.read()).decode('utf-8')

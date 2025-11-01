@@ -35,11 +35,8 @@ class AudioAnalyzer:
     def _analyze_audio_with_whisper_api(self, file_path: Path) -> str:
         """Analyze audio content using OpenAI Whisper API with audio preprocessing."""
         try:
-            # Check file size limit for Whisper API (25MB)
-            if file_path.stat().st_size > 25 * 1024 * 1024:
-                return "Audio file too large for Whisper analysis"
-            
             # Preprocess audio for better analysis (extract first 2 minutes)
+            # Note: Large files will be preprocessed (first 2 minutes extracted) to manage processing time
             processed_audio_path = self._preprocess_audio_for_analysis(file_path)
             if not processed_audio_path or not processed_audio_path.exists():
                 return "Could not preprocess audio for analysis"

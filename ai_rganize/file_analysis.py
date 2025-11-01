@@ -26,13 +26,12 @@ class FileAnalyzer:
     def get_file_content_preview(self, file_path: Path) -> str:
         """Get a content preview of the file for AI analysis."""
         try:
-            # Check file size
-            if file_path.stat().st_size > self.max_file_size_bytes:
-                return f"Large file ({file_path.stat().st_size / (1024*1024):.1f}MB) - content analysis skipped"
-            
             # Skip system files
             if is_system_file(file_path):
                 return "System file (skipped)"
+            
+            # Note: Individual analyzers may skip content analysis for very large files
+            # to prevent excessive API costs, but files are still included for organization
             
             # Get MIME type
             mime_type, _ = mimetypes.guess_type(str(file_path))

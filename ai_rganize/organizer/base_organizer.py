@@ -82,14 +82,13 @@ class BaseOrganizer:
         try:
             for file_path in directory.rglob('*'):
                 if file_path.is_file() and not self.file_analyzer.is_system_file(file_path):
-                    # Check file size
-                    if file_path.stat().st_size <= self.max_file_size_bytes:
-                        files.append({
-                            'path': file_path,
-                            'name': file_path.name,
-                            'size': file_path.stat().st_size,
-                            'modified': datetime.fromtimestamp(file_path.stat().st_mtime)
-                        })
+                    # Include all files regardless of size
+                    files.append({
+                        'path': file_path,
+                        'name': file_path.name,
+                        'size': file_path.stat().st_size,
+                        'modified': datetime.fromtimestamp(file_path.stat().st_mtime)
+                    })
         except PermissionError:
             pass  # Skip directories we can't access
         
