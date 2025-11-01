@@ -118,26 +118,52 @@ class BaseOrganizer:
     def execute_organization(self, plan: Dict, target_dir: Path) -> bool:
         """Execute the organization plan."""
         try:
+            files_moved = 0
+            folders_created = 0
+            
             for folder_name, files in plan.items():
                 if folder_name == 'summary':
+                    continue
+                
+                if not files:  # Skip empty folders
                     continue
                 
                 # Create destination folder
                 dest_folder = target_dir / folder_name
                 dest_folder.mkdir(exist_ok=True)
+                folders_created += 1
                 
                 # Move files
                 for file_info in files:
                     source = file_info['path']
                     dest = dest_folder / source.name
                     
-                    if source != dest:  # Don't move if already in correct location
+                    # Check if source exists
+                    if not source.exists():
+                        print(f"⚠️  File not found: {source}")
+                        continue
+                    
+                    # Don't move if already in correct location
+                    if source.resolve() == dest.resolve():
+                        continue
+                    
+                    # Move the file
+                    try:
                         shutil.move(str(source), str(dest))
+                        files_moved += 1
+                        print(f"✅ Moved: {source.name} → {folder_name}/")
+                    except Exception as e:
+                        print(f"❌ Failed to move {source.name}: {e}")
             
-            return True
+            if files_moved == 0:
+                print("⚠️  No files were moved. The organization plan may be empty or files are already in the correct location.")
+            
+            return files_moved > 0
         
         except Exception as e:
             print(f"❌ Organization failed: {e}")
+            import traceback
+            traceback.print_exc()
             return False
     
     def _clean_folder_name(self, name: str) -> str:

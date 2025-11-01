@@ -26,6 +26,21 @@ dependencies = [
     "Pillow>=8.0.0",
     "click>=8.0.0",
     "rich>=10.0.0",
+    "python-dotenv>=0.19.0",
+    "PyPDF2>=3.0.0",
+    "python-docx>=1.1.0",
+]
+
+[project.optional-dependencies]
+claude = ["anthropic>=0.7.0"]
+gemini = ["google-generativeai>=0.3.0"]
+ollama = ["ollama>=0.1.0"]
+mistral = ["mistralai>=0.1.0"]
+all = [
+    "anthropic>=0.7.0",
+    "google-generativeai>=0.3.0",
+    "ollama>=0.1.0",
+    "mistralai>=0.1.0",
 ]
 
 [project.urls]

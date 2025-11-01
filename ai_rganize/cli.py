@@ -11,20 +11,21 @@ from rich.panel import Panel
 
 
 @click.command()
-@click.option('--api-key', help='OpenAI API key (or set OPENAI_API_KEY env var)')
+@click.option('--api-key', help='API key for the selected LLM provider (or set corresponding env var)')
 @click.option('--directory', '-d', help='Specific directory to organize (default: all common dirs)')
 @click.option('--dry-run', is_flag=True, help='Show organization plan without moving files')
-@click.option('--backup/--no-backup', default=True, help='Create backup before organizing')
+@click.option('--backup/--no-backup', default=False, help='Create backup before organizing (default: no-backup)')
 @click.option('--ai-limit', default=50, help='Maximum number of files to analyze with AI (default: 50)')
 @click.option('--max-file-size', default=10, help='Maximum file size in MB for AI analysis (default: 10)')
-@click.option('--batch-size', default=5, help='Number of files to process in each AI batch (default: 5)')
+@click.option('--batch-size', default=5, help='Number of files to process in each AI batch. Auto-calculated when --max-folders is set (default: 5)')
 @click.option('--max-cost', default=1.0, help='Maximum cost in USD for AI processing (default: 1.0)')
-@click.option('--llm-provider', default='openai', type=click.Choice(['openai', 'claude', 'gemini'], case_sensitive=False), help='LLM provider to use for AI categorization (default: openai)')
-@click.option('--openai-model', default='gpt-4o', help='OpenAI model to use for AI categorization (default: gpt-4o)')
+@click.option('--max-folders', type=int, help='Maximum number of folders to create (e.g., 6 folders for 200 files). If not specified, LLM creates as many folders as needed.')
+@click.option('--llm-provider', default='openai', type=click.Choice(['openai', 'claude', 'gemini', 'ollama', 'mistral'], case_sensitive=False), help='LLM provider to use for AI categorization (default: openai)')
+@click.option('--model', help='Model name to use (defaults vary by provider). Examples: gpt-4o, claude-sonnet-4, gemini-2.5-pro, llama3.1, mistral-large')
 @click.option('--no-ai', is_flag=True, help='Disable AI categorization, use only rule-based')
 @click.option('--summary-only', is_flag=True, help='Show only summary in dry run (no file details)')
 @click.option('--verbose', '-v', is_flag=True, help='Show detailed processing information')
-def main(api_key, directory, dry_run, backup, ai_limit, max_file_size, batch_size, max_cost, llm_provider, openai_model, no_ai, summary_only, verbose):
+def main(api_key, directory, dry_run, backup, ai_limit, max_file_size, batch_size, max_cost, max_folders, llm_provider, model, no_ai, summary_only, verbose):
     """AI-rganize - Intelligently organize your files using AI."""
     
     console = Console()
@@ -35,17 +36,26 @@ def main(api_key, directory, dry_run, backup, ai_limit, max_file_size, batch_siz
         border_style="blue"
     ))
     
-    # Validate LLM provider and model combination
-    if llm_provider != 'openai' and openai_model != 'gpt-4o':
-        console.print(f"[yellow]Warning: --openai-model is only used with OpenAI provider. Using default model for {llm_provider}.[/yellow]")
+    # Set default model based on provider if not specified
+    if not model:
+        default_models = {
+            'openai': 'gpt-4o',
+            'claude': 'claude-sonnet-4-20250514',  # Latest Claude Sonnet 4.5
+            'gemini': 'gemini-2.5-pro-exp',  # Latest Gemini 2.5 Pro
+            'ollama': 'llama3.1',
+            'mistral': 'mistral-large-latest',
+        }
+        model = default_models.get(llm_provider.lower(), 'gpt-4o')
+        if verbose:
+            console.print(f"[blue]Using default model for {llm_provider}: {model}[/blue]")
     
     try:
         if no_ai:
             organizer = RuleBasedOrganizer(max_file_size_mb=max_file_size)
         else:
             organizer = AIOrganizer(api_key, max_file_size_mb=max_file_size, 
-                                  batch_size=batch_size, max_cost=max_cost, model=openai_model, 
-                                  llm_provider=llm_provider)
+                                  batch_size=batch_size, max_cost=max_cost, model=model, 
+                                  llm_provider=llm_provider, max_folders=max_folders)
     except ValueError as e:
         console.print(f"[red]Error: {e}[/red]")
         return
@@ -85,6 +95,14 @@ def main(api_key, directory, dry_run, backup, ai_limit, max_file_size, batch_siz
     else:
         console.print("[blue]Using AI-powered categorization[/blue]")
         plan = organizer.create_organization_plan(all_files, ai_limit, verbose=verbose)
+    
+    # Check if plan is empty
+    plan_folders = [k for k in plan.keys() if k != 'summary']
+    if not plan_folders:
+        console.print("[red]Error: No organization plan was created. No files were categorized.[/red]")
+        if not verbose:
+            console.print("[yellow]Tip: Try running with --verbose flag to see detailed processing information[/yellow]")
+        return
     
     organizer.display_organization_plan(plan, show_details=not summary_only)
     

@@ -23,7 +23,7 @@ class AI_rganize:
     
     def __init__(self, api_key: Optional[str] = None, max_file_size_mb: int = 10, 
                  use_ai: bool = True, batch_size: int = 5, max_cost: float = 1.0, 
-                 model: str = 'gpt-4o', llm_provider: str = 'openai'):
+                 model: str = 'gpt-4o', llm_provider: str = 'openai', max_folders: Optional[int] = None):
         """
         Initialize AI-rganize with configuration.
         
@@ -34,7 +34,8 @@ class AI_rganize:
             batch_size: Number of files to process in each AI batch
             max_cost: Maximum cost for AI processing
             model: AI model to use
-            llm_provider: LLM provider (openai, claude, gemini)
+            llm_provider: LLM provider (openai, claude, gemini, etc.)
+            max_folders: Maximum number of folders to create (None = no limit)
         """
         self.api_key = api_key
         self.max_file_size_mb = max_file_size_mb
@@ -43,6 +44,7 @@ class AI_rganize:
         self.max_cost = max_cost
         self.model = model
         self.llm_provider = llm_provider
+        self.max_folders = max_folders
         
         # Initialize the appropriate organizer
         if use_ai:
@@ -52,7 +54,8 @@ class AI_rganize:
                 batch_size=batch_size,
                 max_cost=max_cost,
                 model=model,
-                llm_provider=llm_provider
+                llm_provider=llm_provider,
+                max_folders=max_folders
             )
         else:
             self.organizer = RuleBasedOrganizer(max_file_size_mb=max_file_size_mb)
@@ -98,7 +101,8 @@ def create_rule_based_organizer(max_file_size_mb: int = 10) -> RuleBasedOrganize
 
 def create_ai_organizer(api_key: Optional[str] = None, max_file_size_mb: int = 10,
                        batch_size: int = 5, max_cost: float = 1.0, 
-                       model: str = 'gpt-4o', llm_provider: str = 'openai') -> AIOrganizer:
+                       model: str = 'gpt-4o', llm_provider: str = 'openai',
+                       max_folders: Optional[int] = None) -> AIOrganizer:
     """Create an AI-powered organizer."""
     return AIOrganizer(
         api_key=api_key,
@@ -106,7 +110,8 @@ def create_ai_organizer(api_key: Optional[str] = None, max_file_size_mb: int = 1
         batch_size=batch_size,
         max_cost=max_cost,
         model=model,
-        llm_provider=llm_provider
+        llm_provider=llm_provider,
+        max_folders=max_folders
     )
 
 
