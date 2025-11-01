@@ -692,6 +692,133 @@ class MistralClient(BaseAIClient):
         raise Exception("Max retries exceeded")
 
 
+class OpenRouterClient(BaseAIClient):
+    """OpenRouter client implementation."""
+    
+    def __init__(self, api_key: Optional[str] = None, model: str = 'anthropic/claude-3.5-sonnet'):
+        super().__init__(api_key, model)
+        self.api_key = api_key or os.getenv('OPENROUTER_API_KEY')
+        if not self.api_key:
+            raise ValueError("OpenRouter API key not found. Set OPENROUTER_API_KEY environment variable.")
+        
+        # OpenRouter uses OpenAI-compatible API with custom base URL
+        self.client = openai.OpenAI(
+            api_key=self.api_key,
+            base_url="https://openrouter.ai/api/v1"
+        )
+        self.rate_limiter = RateLimiter(cost_per_token=self.get_cost_per_token())
+    
+    def get_cost_per_token(self) -> float:
+        """Get cost per token based on the model."""
+        model_costs = {
+            # Anthropic models via OpenRouter
+            'anthropic/claude-3.5-sonnet': 0.003,  # $0.003 per 1K tokens (avg)
+            'anthropic/claude-3-opus': 0.015,  # $0.015 per 1K tokens (avg)
+            'anthropic/claude-3-haiku': 0.00025,  # $0.00025 per 1K tokens (avg)
+            # OpenAI models via OpenRouter
+            'openai/gpt-4o': 0.01,  # $0.01 per 1K tokens (avg)
+            'openai/gpt-4o-mini': 0.00015,  # $0.00015 per 1K tokens (avg)
+            # Google models via OpenRouter
+            'google/gemini-2.0-flash-exp': 0.000075,  # $0.000075 per 1K tokens (avg)
+            'google/gemini-pro-1.5': 0.00125,  # $0.00125 per 1K tokens (avg)
+            # Meta models via OpenRouter
+            'meta-llama/llama-3.1-70b-instruct': 0.00035,  # $0.00035 per 1K tokens (avg)
+        }
+        return model_costs.get(self.model, 0.003)  # Default to Claude 3.5 Sonnet pricing
+    
+    def categorize_files(self, file_batch: List[Dict], verbose: bool = False,
+                        max_folders: Optional[int] = None, existing_folders: Optional[List[str]] = None,
+                        remaining_folder_slots: Optional[int] = None) -> List[str]:
+        """Categorize files using OpenRouter API."""
+        from .file_analysis import FileAnalyzer
+        
+        analyzer = FileAnalyzer()
+        batch_content = []
+        
+        for file_info in file_batch:
+            content_preview = analyzer.get_file_content_preview(file_info['path'])
+            batch_content.append(f"File: {file_info['name']} (Location: {file_info['path'].parent.name}, Content: {content_preview})\n")
+        
+        prompt = self._create_categorization_prompt(batch_content, len(file_batch),
+                                                   max_folders, existing_folders, remaining_folder_slots)
+        
+        # Enhanced retry logic with exponential backoff
+        for attempt in range(self.rate_limiter.max_retries):
+            try:
+                # Wait if needed to respect rate limits
+                self.rate_limiter.wait_if_needed()
+                
+                if verbose:
+                    print(f"    📡 Sending batch request to OpenRouter ({self.model}) for {len(file_batch)} files...")
+                
+                response = self.client.chat.completions.create(
+                    model=self.model,
+                    messages=[{"role": "user", "content": prompt}],
+                    max_tokens=1024,
+                    temperature=0.1,
+                    extra_headers={
+                        "HTTP-Referer": "https://github.com/yourusername/ai-rganize",
+                        "X-Title": "AI-rganize"
+                    }
+                )
+                
+                # Update usage stats from response
+                if hasattr(response, 'usage'):
+                    tokens_used = response.usage.total_tokens
+                    self.rate_limiter.usage_stats['tokens_used'] += tokens_used
+                    # Calculate cost based on model pricing
+                    cost_per_token = self.get_cost_per_token()
+                    cost = (tokens_used / 1000) * cost_per_token
+                    self.rate_limiter.usage_stats['cost_estimate'] += cost
+                
+                # Update request count
+                self.rate_limiter.usage_stats['requests_made'] += 1
+                
+                # Parse response
+                response_text = response.choices[0].message.content.strip()
+                
+                if verbose:
+                    print(f"    📝 Raw AI response preview: {response_text[:200]}...")
+                
+                # Try to parse folder names - handle various formats
+                folder_names = []
+                for line in response_text.split('\n'):
+                    line = line.strip()
+                    if not line:
+                        continue
+                    # Remove numbering/bullets if present (e.g., "1. Folder_Name" or "- Folder_Name")
+                    line = line.lstrip('0123456789.-) ').strip()
+                    # Remove quotes if present
+                    line = line.strip('"\'')
+                    if line:
+                        folder_names.append(line)
+                
+                # If we got fewer folder names than files, there might be an issue
+                if len(folder_names) < len(file_batch):
+                    if verbose:
+                        print(f"    ⚠️  Warning: AI returned {len(folder_names)} folder names for {len(file_batch)} files")
+                        print(f"    📝 Full response: {response_text}")
+                    raise ValueError(f"Expected {len(file_batch)} folder names (one per file), but got {len(folder_names)}. Response: {response_text[:500]}")
+                
+                if verbose:
+                    print(f"    📥 Received batch response: {folder_names}")
+                
+                return folder_names
+                
+            except Exception as e:
+                if not self.rate_limiter.should_retry(attempt, e):
+                    raise e
+                
+                delay = self.rate_limiter.get_retry_delay(attempt)
+                if delay > 0:
+                    if verbose:
+                        print(f"    ⚠️  Retry {attempt + 1}/{self.rate_limiter.max_retries} in {delay:.1f}s...")
+                    import time
+                    time.sleep(delay)
+        
+        raise Exception("Max retries exceeded")
+
+
 def create_ai_client(provider: str, api_key: Optional[str] = None, model: str = None) -> BaseAIClient:
     """Factory function to create AI clients."""
     provider_lower = provider.lower()
@@ -706,5 +833,7 @@ def create_ai_client(provider: str, api_key: Optional[str] = None, model: str = 
         return OllamaClient(api_key, model)
     elif provider_lower == 'mistral':
         return MistralClient(api_key, model)
+    elif provider_lower == 'openrouter':
+        return OpenRouterClient(api_key, model)
     else:
-        raise ValueError(f"Unsupported LLM provider: {provider}. Supported providers: openai, claude, gemini, ollama, mistral")
+        raise ValueError(f"Unsupported LLM provider: {provider}. Supported providers: openai, claude, gemini, ollama, mistral, openrouter")

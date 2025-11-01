@@ -45,3 +45,5 @@ Thumbs.db
 
 # uv
 .uv/
+.history/
+.kiro/
