@@ -20,7 +20,7 @@ from rich.panel import Panel
 @click.option('--batch-size', default=5, help='Number of files to process in each AI batch. Auto-calculated when --max-folders is set (default: 5)')
 @click.option('--max-cost', default=1.0, help='Maximum cost in USD for AI processing (default: 1.0)')
 @click.option('--max-folders', type=int, help='Maximum number of folders to create (e.g., 6 folders for 200 files). If not specified, LLM creates as many folders as needed.')
-@click.option('--llm-provider', default='openai', type=click.Choice(['openai', 'claude', 'gemini', 'ollama', 'mistral'], case_sensitive=False), help='LLM provider to use for AI categorization (default: openai)')
+@click.option('--llm-provider', default='openai', type=click.Choice(['openai', 'claude', 'gemini', 'ollama', 'mistral', 'openrouter'], case_sensitive=False), help='LLM provider to use for AI categorization (default: openai)')
 @click.option('--model', help='Model name to use (defaults vary by provider). Examples: gpt-4o, claude-sonnet-4, gemini-2.5-pro, llama3.1, mistral-large')
 @click.option('--no-ai', is_flag=True, help='Disable AI categorization, use only rule-based')
 @click.option('--summary-only', is_flag=True, help='Show only summary in dry run (no file details)')
@@ -44,6 +44,7 @@ def main(api_key, directory, dry_run, backup, ai_limit, max_file_size, batch_siz
             'gemini': 'gemini-2.5-pro-exp',  # Latest Gemini 2.5 Pro
             'ollama': 'llama3.1',
             'mistral': 'mistral-large-latest',
+            'openrouter': 'anthropic/claude-3.5-sonnet',
         }
         model = default_models.get(llm_provider.lower(), 'gpt-4o')
         if verbose:
