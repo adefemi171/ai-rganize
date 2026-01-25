@@ -1,23 +1,27 @@
-"""
-Base organizer class with common functionality.
-"""
+"""Base organizer functionality."""
 
 import os
 import shutil
 import platform
+import traceback
 from pathlib import Path
 from typing import Dict, List, Optional
 from datetime import datetime
 
+from rich.console import Console
+from rich.panel import Panel
+
 from ..permissions import PermissionHandler
 from ..file_analysis import FileAnalyzer
+from ..utils.metadata import (
+    move_preserving_metadata,
+    create_manifest,
+    save_manifest,
+)
 
 
 class BaseOrganizer:
-    """Base class for file organizers with common functionality."""
-    
     def __init__(self, max_file_size_mb: int = 10):
-        """Initialize base organizer."""
         self.home_dir = Path.home()
         self.target_dirs = self._get_common_directories()
         self.max_file_size_bytes = max_file_size_mb * 1024 * 1024
@@ -37,7 +41,6 @@ class BaseOrganizer:
         }
     
     def _get_common_directories(self) -> Dict[str, Path]:
-        """Get common directories based on the operating system."""
         home = Path.home()
         
         if platform.system() == "Darwin":  # macOS
@@ -68,12 +71,9 @@ class BaseOrganizer:
             }
     
     def check_permissions(self) -> bool:
-        """Check if we have permission to access target directories."""
-        permission_handler = PermissionHandler()
-        return permission_handler.check_permissions(self.target_dirs)
+        return PermissionHandler().check_permissions(self.target_dirs)
     
     def scan_files(self, directory: Path) -> List[Dict]:
-        """Scan directory for files to organize."""
         files = []
         
         if not directory.exists():
@@ -95,7 +95,6 @@ class BaseOrganizer:
         return files
     
     def create_backup(self, files: List[Dict]) -> bool:
-        """Create backup of files before organization."""
         try:
             backup_dir = Path.home() / 'ai_rganize_backup' / datetime.now().strftime('%Y%m%d_%H%M%S')
             backup_dir.mkdir(parents=True, exist_ok=True)
@@ -114,11 +113,29 @@ class BaseOrganizer:
             print(f"❌ Backup failed: {e}")
             return False
     
-    def execute_organization(self, plan: Dict, target_dir: Path) -> bool:
-        """Execute the organization plan."""
+    def execute_organization(self, plan: Dict, target_dir: Path, 
+                             save_manifest_file: bool = True,
+                             ai_provider: Optional[str] = None,
+                             model: Optional[str] = None) -> bool:
+        """
+        Execute the organization plan with metadata preservation.
+        
+        Args:
+            plan: Organization plan mapping folder names to files
+            target_dir: Target directory for organization
+            save_manifest_file: Whether to save manifest for undo capability
+            ai_provider: Name of AI provider used (for manifest)
+            model: Model name used (for manifest)
+            
+        Returns:
+            True if any files were moved successfully
+        """
         try:
             files_moved = 0
             folders_created = 0
+            
+            # Create manifest for tracking moves
+            manifest = create_manifest(target_dir, ai_provider, model)
             
             for folder_name, files in plan.items():
                 if folder_name == 'summary':
@@ -146,13 +163,22 @@ class BaseOrganizer:
                     if source.resolve() == dest.resolve():
                         continue
                     
-                    # Move the file
+                    # Move the file with metadata preservation
                     try:
-                        shutil.move(str(source), str(dest))
+                        metadata = move_preserving_metadata(source, dest)
+                        
+                        # Add to manifest
+                        manifest.add_move(source, dest, folder_name, metadata)
+                        
                         files_moved += 1
                         print(f"✅ Moved: {source.name} → {folder_name}/")
                     except Exception as e:
                         print(f"❌ Failed to move {source.name}: {e}")
+            
+            # Save manifest if any files were moved
+            if files_moved > 0 and save_manifest_file:
+                manifest_path = save_manifest(manifest, target_dir)
+                print(f"📋 Manifest saved: {manifest_path}")
             
             if files_moved == 0:
                 print("⚠️  No files were moved. The organization plan may be empty or files are already in the correct location.")
@@ -161,12 +187,10 @@ class BaseOrganizer:
         
         except Exception as e:
             print(f"❌ Organization failed: {e}")
-            import traceback
             traceback.print_exc()
             return False
     
     def _clean_folder_name(self, name: str) -> str:
-        """Clean folder name for filesystem compatibility."""
         # Remove invalid characters
         invalid_chars = '<>:"/\\|?*'
         for char in invalid_chars:
@@ -182,10 +206,6 @@ class BaseOrganizer:
         return name or 'Unnamed_Folder'
     
     def display_organization_plan(self, plan: Dict, show_details: bool = True):
-        """Display the organization plan."""
-        from rich.console import Console
-        from rich.panel import Panel
-        
         console = Console()
         
         if not show_details:

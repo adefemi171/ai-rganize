@@ -1,21 +1,18 @@
-"""
-Image analysis utilities for content extraction and categorization.
-"""
+"""Image file analysis."""
 
 import base64
 from pathlib import Path
 from typing import Optional
+
 from PIL import Image
+from openai import OpenAI
 
 
 class ImageAnalyzer:
-    """Analyzes image files for content and categorization."""
-    
     def __init__(self, max_file_size_bytes: int):
         self.max_file_size_bytes = max_file_size_bytes
     
     def analyze_image(self, file_path: Path) -> str:
-        """Analyze image files using OpenAI Vision API."""
         try:
             # Get image dimensions
             with Image.open(file_path) as img:
@@ -46,7 +43,6 @@ class ImageAnalyzer:
             if not base64_image:
                 return "Image too large for analysis"
             
-            from openai import OpenAI
             client = OpenAI()
             
             # Analyze image with Vision API

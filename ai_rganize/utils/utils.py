@@ -14,22 +14,16 @@ class Console:
         self.console = RichConsole()
     
     def print(self, *args, **kwargs):
-        """Print with rich formatting."""
         self.console.print(*args, **kwargs)
     
     def input(self, prompt: str = "") -> str:
-        """Get user input."""
         return Prompt.ask(prompt)
     
     def confirm(self, message: str) -> bool:
-        """Get user confirmation."""
         return Confirm.ask(message)
 
 
 class Panel:
-    """Panel wrapper."""
-    
     @staticmethod
     def fit(content: str, **kwargs):
-        """Create a fitted panel."""
         return RichPanel.fit(content, **kwargs)

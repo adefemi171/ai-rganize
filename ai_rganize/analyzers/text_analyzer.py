@@ -1,15 +1,10 @@
-"""
-Text file analysis utilities for content extraction and categorization.
-"""
+"""Text file analysis."""
 
 from pathlib import Path
 
 
 class TextAnalyzer:
-    """Analyzes text files for content and categorization."""
-    
     def analyze_text(self, file_path: Path) -> str:
-        """Analyze text files."""
         try:
             with open(file_path, 'r', encoding='utf-8', errors='ignore') as file:
                 content = file.read(1000)  # First 1000 characters

@@ -1,21 +1,18 @@
-"""
-Audio analysis utilities for content extraction and categorization.
-"""
+"""Audio file analysis."""
 
 import subprocess
 import tempfile
 from pathlib import Path
 from typing import Optional
 
+from openai import OpenAI
+
 
 class AudioAnalyzer:
-    """Analyzes audio files for content and categorization."""
-    
     def __init__(self, max_file_size_bytes: int):
         self.max_file_size_bytes = max_file_size_bytes
     
     def analyze_audio(self, file_path: Path) -> str:
-        """Analyze audio files using OpenAI Whisper API."""
         try:
             file_size = file_path.stat().st_size / 1024  # KB
             analysis = f"Audio file: {file_size:.1f}KB"
@@ -41,7 +38,6 @@ class AudioAnalyzer:
             if not processed_audio_path or not processed_audio_path.exists():
                 return "Could not preprocess audio for analysis"
             
-            from openai import OpenAI
             client = OpenAI()
             
             # Transcribe audio with Whisper API

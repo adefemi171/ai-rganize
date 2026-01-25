@@ -27,20 +27,12 @@ def extract_person_name(filename: str) -> str:
 
 
 def is_system_file(file_path: Path) -> bool:
-    """Check if file is a system file that should be skipped."""
-    system_files = {
-        '.DS_Store', 'Thumbs.db', 'desktop.ini', '.gitignore',
-        '.gitkeep', '.env', '.env.local', '.env.production'
-    }
-    
-    return file_path.name in system_files or file_path.name.startswith('.')
+    return file_path.name in SYSTEM_FILES or file_path.name.startswith('.')
 
 
 def get_file_size_mb(file_path: Path) -> float:
-    """Get file size in MB."""
     return file_path.stat().st_size / (1024 * 1024)
 
 
 def get_file_size_kb(file_path: Path) -> float:
-    """Get file size in KB."""
     return file_path.stat().st_size / 1024

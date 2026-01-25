@@ -40,8 +40,7 @@ class PermissionHandler:
     
     
     def get_permission_guide(self) -> str:
-        """Get OS-specific permission setup guide."""
-        if self.system == "darwin":  # macOS
+        if self.system == "darwin":
             return """
 🔒 macOS Permission Setup:
 1. Open System Preferences > Security & Privacy > Privacy

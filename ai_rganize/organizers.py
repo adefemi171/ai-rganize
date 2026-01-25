@@ -1,11 +1,5 @@
-"""
-Organizers module - Import and re-export all organizer classes.
-"""
+"""Organizer classes."""
 
 from .organizer import BaseOrganizer, AIOrganizer, RuleBasedOrganizer
 
-__all__ = [
-    'BaseOrganizer',
-    'AIOrganizer', 
-    'RuleBasedOrganizer'
-]
+__all__ = ['BaseOrganizer', 'AIOrganizer', 'RuleBasedOrganizer']
