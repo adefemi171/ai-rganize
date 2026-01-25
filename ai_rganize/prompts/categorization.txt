@@ -1,0 +1,14 @@
+Categorize these {file_count} files into folders based on their content and purpose.
+{constraint}
+
+FILES:
+{files_list}
+
+RULES:
+1. Analyze actual file content, not just names
+2. Group by purpose/theme (resumes together, photos together, etc.)
+3. Use descriptive folder names (2-4 words, underscores)
+4. Return EXACTLY {file_count} folder names, one per line
+5. Same folder name for related files
+
+Respond with {file_count} folder names only, one per line:

@@ -24,16 +24,10 @@ class FileAnalyzer:
         self.text_analyzer = TextAnalyzer()
     
     def get_file_content_preview(self, file_path: Path) -> str:
-        """Get a content preview of the file for AI analysis."""
         try:
-            # Skip system files
             if is_system_file(file_path):
                 return "System file (skipped)"
             
-            # Note: Individual analyzers may skip content analysis for very large files
-            # to prevent excessive API costs, but files are still included for organization
-            
-            # Get MIME type
             mime_type, _ = mimetypes.guess_type(str(file_path))
             
             # Route to appropriate analyzer based on file type
@@ -74,13 +68,10 @@ class FileAnalyzer:
             return f"Analysis error: {str(e)[:50]}"
     
     def get_image_base64(self, file_path: Path) -> Optional[str]:
-        """Get base64 encoded image for OpenAI Vision API."""
         return self.image_analyzer._get_image_base64(file_path)
     
     def extract_person_name(self, filename: str) -> Optional[str]:
-        """Extract person name from filename for intelligent grouping."""
         return extract_person_name(filename)
     
     def is_system_file(self, file_path: Path) -> bool:
-        """Check if file is a system file that should be skipped."""
         return is_system_file(file_path)

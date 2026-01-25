@@ -1,13 +1,19 @@
-"""
-AI-powered file organizer using LLM for intelligent categorization.
-"""
+"""AI-powered file organizer."""
 
 import time
 from typing import Dict, List, Optional
 from pathlib import Path
 
+import PyPDF2
+
+try:
+    from docx import Document
+    DOCX_AVAILABLE = True
+except ImportError:
+    DOCX_AVAILABLE = False
+
 from .base_organizer import BaseOrganizer
-from ..ai_client import create_ai_client, BaseAIClient
+from ..ai_client import create_ai_client
 
 
 class AIOrganizer(BaseOrganizer):
@@ -25,8 +31,88 @@ class AIOrganizer(BaseOrganizer):
         self.max_folders = max_folders
         self.ai_client = create_ai_client(llm_provider, api_key, model)
     
+    def _extract_file_content(self, file_info: Dict, verbose: bool = False) -> str:
+        path = file_info['path']
+        if isinstance(path, str):
+            path = Path(path)
+        suffix = path.suffix.lower()
+        content = ""
+        
+        try:
+            # PDF files - extract actual text
+            if suffix == '.pdf':
+                content = self._extract_pdf_text(path)
+                if verbose and content:
+                    print(f"    📄 Extracted {len(content)} chars from PDF: {path.name}")
+            
+            # Word documents
+            elif suffix in ['.docx', '.doc']:
+                content = self._extract_docx_text(path)
+                if verbose and content:
+                    print(f"    📄 Extracted {len(content)} chars from Word doc: {path.name}")
+            
+            # Text files
+            elif suffix in ['.txt', '.md', '.csv', '.json', '.xml', '.html', '.py', '.js']:
+                try:
+                    with open(path, 'r', errors='ignore') as f:
+                        content = f.read(5000)  # First 5000 chars
+                    if verbose and content:
+                        print(f"    📄 Read {len(content)} chars from text file: {path.name}")
+                except Exception:
+                    pass
+            
+        except Exception as e:
+            if verbose:
+                print(f"    ⚠ Could not extract content from {path.name}: {e}")
+        
+        return content[:2000] if content else ""  # Limit to 2000 chars for API
+    
+    def _extract_pdf_text(self, path: Path) -> str:
+        try:
+            text_parts = []
+            with open(path, 'rb') as f:
+                reader = PyPDF2.PdfReader(f)
+                pages_to_read = min(len(reader.pages), 3)  # First 3 pages
+                
+                for i in range(pages_to_read):
+                    page = reader.pages[i]
+                    text = page.extract_text()
+                    if text:
+                        text_parts.append(text.strip())
+            
+            return '\n'.join(text_parts)
+        except Exception:
+            return ""
+    
+    def _extract_docx_text(self, path: Path) -> str:
+        if not DOCX_AVAILABLE:
+            return ""
+        try:
+            doc = Document(path)
+            paragraphs = [p.text for p in doc.paragraphs if p.text.strip()]
+            return '\n'.join(paragraphs[:50])  # First 50 paragraphs
+        except Exception:
+            return ""
+    
+    def _prepare_batch_with_content(self, batch: List[Dict], verbose: bool = False) -> List[Dict]:
+        prepared = []
+        for f in batch:
+            file_data = {
+                'name': f['name'],
+                'path': str(f['path']),
+                'size': f.get('size', 0),
+            }
+            
+            # Extract content for better categorization
+            content = self._extract_file_content(f, verbose=verbose)
+            if content:
+                file_data['content'] = content
+            
+            prepared.append(file_data)
+        
+        return prepared
+    
     def create_organization_plan(self, files: List[Dict], ai_limit: int = 50, verbose: bool = False) -> Dict:
-        """Create organization plan using AI categorization."""
         plan = {}
         ai_limit_reached_message_shown = False
         existing_folders = set()  # Track folder names across batches for max_folders limit
@@ -53,6 +139,9 @@ class AIOrganizer(BaseOrganizer):
                 if verbose:
                     print(f"🔄 Processing batch {i//self.batch_size + 1}/{(len(files) + self.batch_size - 1)//self.batch_size} ({len(batch)} files)")
                 
+                # Extract content from files for better categorization
+                prepared_batch = self._prepare_batch_with_content(batch, verbose=verbose)
+                
                 # Check cost limits and balance management
                 if self.current_cost >= self.max_cost:
                     if verbose:
@@ -77,7 +166,7 @@ class AIOrganizer(BaseOrganizer):
                         remaining_slots = 1  # Allow at least 1 folder (must reuse existing)
                 
                 folder_names = self.ai_client.categorize_files(
-                    batch, 
+                    prepared_batch, 
                     verbose=verbose,
                     max_folders=self.max_folders,
                     existing_folders=list(existing_folders),

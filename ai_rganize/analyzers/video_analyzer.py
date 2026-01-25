@@ -1,21 +1,19 @@
-"""
-Video analysis utilities for content extraction and categorization.
-"""
+"""Video file analysis."""
 
+import base64
 import subprocess
 import tempfile
 from pathlib import Path
 from typing import Optional
 
+from openai import OpenAI
+
 
 class VideoAnalyzer:
-    """Analyzes video files for content and categorization."""
-    
     def __init__(self, max_file_size_bytes: int):
         self.max_file_size_bytes = max_file_size_bytes
     
     def analyze_video(self, file_path: Path) -> str:
-        """Analyze video files using OpenAI Vision API."""
         try:
             file_size = file_path.stat().st_size / (1024 * 1024)  # MB
             analysis = f"Video file: {file_size:.1f}MB"
@@ -33,7 +31,6 @@ class VideoAnalyzer:
             return "Video file (analysis unavailable)"
     
     def _analyze_video_with_vision_api(self, file_path: Path) -> str:
-        """Analyze video content by extracting a frame and using Vision API."""
         try:
             # Extract a frame from the video using ffmpeg
             frame_path = self._extract_video_frame(file_path)
@@ -45,7 +42,6 @@ class VideoAnalyzer:
             if not base64_frame:
                 return "Video frame too large for analysis"
             
-            from openai import OpenAI
             client = OpenAI()
             
             # Analyze video frame with Vision API
@@ -83,7 +79,6 @@ class VideoAnalyzer:
             return f"Video analysis error: {str(e)[:50]}"
     
     def _extract_video_frame(self, file_path: Path) -> Optional[Path]:
-        """Extract a frame from video using ffmpeg."""
         try:
             # Create temporary file for frame
             with tempfile.NamedTemporaryFile(suffix='.jpg', delete=False) as temp_file:
@@ -106,9 +101,7 @@ class VideoAnalyzer:
             return None
     
     def _get_image_base64(self, file_path: Path) -> Optional[str]:
-        """Get base64 encoded image for OpenAI Vision API."""
         try:
-            import base64
             with open(file_path, "rb") as image_file:
                 return base64.b64encode(image_file.read()).decode('utf-8')
         except Exception:

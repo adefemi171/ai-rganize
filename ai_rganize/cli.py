@@ -1,10 +1,14 @@
-"""
-Command-line interface for AIrganizer
-"""
+"""CLI for AI-rganize."""
 
 import click
 from pathlib import Path
 from .organizers import RuleBasedOrganizer, AIOrganizer
+from .utils.metadata import (
+    load_manifest,
+    find_manifest,
+    restore_from_manifest,
+    cleanup_empty_folders
+)
 from rich.console import Console
 from rich.prompt import Confirm
 from rich.panel import Panel
@@ -24,11 +28,55 @@ from rich.panel import Panel
 @click.option('--model', help='Model name to use (defaults vary by provider). Examples: gpt-4o, claude-sonnet-4, gemini-2.5-pro, llama3.1, mistral-large')
 @click.option('--no-ai', is_flag=True, help='Disable AI categorization, use only rule-based')
 @click.option('--summary-only', is_flag=True, help='Show only summary in dry run (no file details)')
+@click.option('--save-manifest/--no-manifest', default=True, help='Save organization manifest for undo capability (default: save)')
+@click.option('--restore', type=click.Path(exists=True), help='Restore files from a manifest file (undo organization)')
 @click.option('--verbose', '-v', is_flag=True, help='Show detailed processing information')
-def main(api_key, directory, dry_run, backup, ai_limit, max_file_size, batch_size, max_cost, max_folders, llm_provider, model, no_ai, summary_only, verbose):
+def main(api_key, directory, dry_run, backup, ai_limit, max_file_size, batch_size, max_cost, max_folders, llm_provider, model, no_ai, summary_only, save_manifest, restore, verbose):
     """AI-rganize - Intelligently organize your files using AI."""
     
     console = Console()
+    
+    # Handle restore operation
+    if restore:
+        console.print(Panel.fit(
+            "[bold blue]AI-rganize - Restore[/bold blue]\n"
+            "Restoring files from manifest",
+            border_style="blue"
+        ))
+        
+        try:
+            manifest_path = Path(restore)
+            manifest = load_manifest(manifest_path)
+            
+            console.print(f"[blue]Manifest created: {manifest.created}[/blue]")
+            console.print(f"[blue]Source directory: {manifest.source_directory}[/blue]")
+            console.print(f"[blue]Files to restore: {len(manifest.moves)}[/blue]")
+            
+            if not Confirm.ask("Do you want to restore these files to their original locations?"):
+                console.print("[yellow]Restore cancelled.[/yellow]")
+                return
+            
+            console.print("[blue]Restoring files...[/blue]")
+            successful, failed = restore_from_manifest(manifest, verbose=True)
+            
+            if successful > 0:
+                console.print(f"[green]✅ Successfully restored {successful} files[/green]")
+                
+                # Clean up empty folders
+                source_dir = Path(manifest.source_directory)
+                removed = cleanup_empty_folders(source_dir, verbose=verbose)
+                if removed > 0:
+                    console.print(f"[green]🗑️  Removed {removed} empty folders[/green]")
+            
+            if failed > 0:
+                console.print(f"[red]❌ Failed to restore {failed} files[/red]")
+            
+        except FileNotFoundError:
+            console.print(f"[red]Error: Manifest file not found: {restore}[/red]")
+        except Exception as e:
+            console.print(f"[red]Error restoring files: {e}[/red]")
+        
+        return
     
     console.print(Panel.fit(
         "[bold blue]AI-rganize[/bold blue]\n"
@@ -126,10 +174,18 @@ def main(api_key, directory, dry_run, backup, ai_limit, max_file_size, batch_siz
     
     # Execute organization
     console.print("[blue]Organizing files...[/blue]")
-    success = organizer.execute_organization(plan, target_dirs[0])
+    success = organizer.execute_organization(
+        plan, 
+        target_dirs[0],
+        save_manifest_file=save_manifest,
+        ai_provider=None if no_ai else llm_provider,
+        model=None if no_ai else model
+    )
     
     if success:
         console.print("[green]File organization completed successfully![/green]")
+        if save_manifest:
+            console.print("[dim]💡 Tip: Use --restore <manifest_path> to undo this organization[/dim]")
     else:
         console.print("[red]File organization failed.[/red]")
 

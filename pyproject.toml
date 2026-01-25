@@ -36,11 +36,13 @@ claude = ["anthropic>=0.7.0"]
 gemini = ["google-generativeai>=0.3.0"]
 ollama = ["ollama>=0.1.0"]
 mistral = ["mistralai>=0.1.0"]
+metadata = ["xattr>=0.10.0"]
 all = [
     "anthropic>=0.7.0",
     "google-generativeai>=0.3.0",
     "ollama>=0.1.0",
     "mistralai>=0.1.0",
+    "xattr>=0.10.0",
 ]
 
 [project.urls]

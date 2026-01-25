@@ -1,11 +1,11 @@
-"""
-Document analysis utilities for PDF and Word document content extraction.
-"""
+"""PDF and Word document analysis."""
 
-import tempfile
+import time
 from pathlib import Path
-from typing import Optional
+
 import PyPDF2
+from openai import OpenAI
+
 try:
     from docx import Document
     DOCX_AVAILABLE = True
@@ -14,13 +14,10 @@ except ImportError:
 
 
 class DocumentAnalyzer:
-    """Analyzes PDF and Word documents for content and categorization."""
-    
     def __init__(self, max_file_size_bytes: int):
         self.max_file_size_bytes = max_file_size_bytes
     
     def analyze_pdf(self, file_path: Path) -> str:
-        """Analyze PDF files using hybrid approach."""
         try:
             file_size = file_path.stat().st_size / (1024 * 1024)  # MB
             analysis = f"PDF file: {file_size:.1f}MB"
@@ -99,9 +96,7 @@ class DocumentAnalyzer:
         return True
     
     def _analyze_pdf_with_openai_api(self, file_path: Path) -> str:
-        """Analyze PDF using OpenAI File Search API."""
         try:
-            from openai import OpenAI
             client = OpenAI()
             
             # Upload file to OpenAI
@@ -144,7 +139,6 @@ class DocumentAnalyzer:
             )
             
             # Wait for completion
-            import time
             while run.status in ["queued", "in_progress"]:
                 time.sleep(1)
                 run = client.beta.threads.runs.retrieve(
@@ -155,11 +149,6 @@ class DocumentAnalyzer:
             if run.status == "completed":
                 messages = client.beta.threads.messages.list(thread_id=thread.id)
                 response = messages.data[0].content[0].text.value
-                
-                # Track document API costs
-                file_size_mb = file_path.stat().st_size / (1024 * 1024)
-                doc_cost = 0.10 + (file_size_mb * 0.01)  # Upload + processing cost
-                # Note: Cost tracking would need to be passed from parent class
                 
                 # Cleanup
                 client.files.delete(uploaded_file.id)
@@ -173,7 +162,6 @@ class DocumentAnalyzer:
             return f"OpenAI PDF analysis error: {str(e)[:50]}"
     
     def _analyze_pdf_local(self, file_path: Path) -> str:
-        """Fallback local PDF analysis using PyPDF2."""
         try:
             with open(file_path, 'rb') as file:
                 pdf_reader = PyPDF2.PdfReader(file)
@@ -206,9 +194,7 @@ class DocumentAnalyzer:
             return f"Local PDF analysis error: {str(e)[:50]}"
     
     def _analyze_word_with_openai_api(self, file_path: Path) -> str:
-        """Analyze Word document using OpenAI File Search API."""
         try:
-            from openai import OpenAI
             client = OpenAI()
             
             # Upload file to OpenAI
@@ -251,7 +237,6 @@ class DocumentAnalyzer:
             )
             
             # Wait for completion
-            import time
             while run.status in ["queued", "in_progress"]:
                 time.sleep(1)
                 run = client.beta.threads.runs.retrieve(
@@ -262,11 +247,6 @@ class DocumentAnalyzer:
             if run.status == "completed":
                 messages = client.beta.threads.messages.list(thread_id=thread.id)
                 response = messages.data[0].content[0].text.value
-                
-                # Track document API costs
-                file_size_mb = file_path.stat().st_size / (1024 * 1024)
-                doc_cost = 0.10 + (file_size_mb * 0.01)  # Upload + processing cost
-                # Note: Cost tracking would need to be passed from parent class
                 
                 # Cleanup
                 client.files.delete(uploaded_file.id)
@@ -280,7 +260,6 @@ class DocumentAnalyzer:
             return f"OpenAI Word analysis error: {str(e)[:50]}"
     
     def _analyze_word_local(self, file_path: Path) -> str:
-        """Fallback local Word document analysis using python-docx."""
         if not DOCX_AVAILABLE:
             return f"Word document: {file_path.stat().st_size / 1024:.1f}KB (python-docx not available)"
         

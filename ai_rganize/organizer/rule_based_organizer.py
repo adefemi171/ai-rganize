@@ -35,7 +35,6 @@ class RuleBasedOrganizer(BaseOrganizer):
         return plan
     
     def _categorize_file(self, file_path: Path) -> str:
-        """Categorize a single file using rules."""
         # Get file extension
         extension = file_path.suffix.lower().lstrip('.')
         
