@@ -590,23 +590,11 @@ def create_ai_client(provider: str, api_key: Optional[str] = None, model: str = 
         'gemini': GeminiClient,
         'ollama': OllamaClient,
         'mistral': MistralClient,
+        'openrouter': OpenRouterClient,
     }
     
     provider = provider.lower()
     if provider not in clients:
         raise ValueError(f"Unknown provider: {provider}. Options: {list(clients.keys())}")
     
-    if provider_lower == 'openai':
-        return OpenAIClient(api_key, model)
-    elif provider_lower == 'claude':
-        return ClaudeClient(api_key, model)
-    elif provider_lower == 'gemini':
-        return GeminiClient(api_key, model)
-    elif provider_lower == 'ollama':
-        return OllamaClient(api_key, model)
-    elif provider_lower == 'mistral':
-        return MistralClient(api_key, model)
-    elif provider_lower == 'openrouter':
-        return OpenRouterClient(api_key, model)
-    else:
-        raise ValueError(f"Unsupported LLM provider: {provider}. Supported providers: openai, claude, gemini, ollama, mistral, openrouter")
+    return clients[provider](api_key, model)
