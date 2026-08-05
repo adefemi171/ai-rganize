@@ -1,5 +1,6 @@
 """Base organizer functionality."""
 
+import os
 import platform
 import shutil
 import traceback
@@ -17,10 +18,10 @@ from ..utils.metadata import (
     save_manifest,
 )
 from ..utils.safety import (
+    default_allowed_roots,
     ensure_destination_safe,
     is_protected_path,
     is_symlink_or_through_symlink,
-    normalize_user_path,
     sanitize_folder_name,
     unique_destination,
 )
@@ -66,39 +67,62 @@ class BaseOrganizer:
     def scan_files(self, directory: Path, allow_protected: bool = False) -> List[Dict]:
         files = []
 
-        # Sanitize caller-supplied paths before any filesystem ops (CodeQL path-injection).
+        # CodeQL-recognized barrier: realpath + startswith under allowed roots.
         try:
-            directory = normalize_user_path(directory)
-        except ValueError:
+            raw = os.fspath(directory).strip()
+            if not raw or "\0" in raw:
+                return files
+            resolved = os.path.realpath(os.path.expanduser(raw))
+        except (TypeError, ValueError, OSError):
             return files
 
-        if not directory.is_dir():
+        allowed = False
+        for root in default_allowed_roots():
+            try:
+                root_real = os.path.realpath(os.path.expanduser(os.fspath(root)))
+            except (TypeError, ValueError, OSError):
+                continue
+            if resolved == root_real or resolved.startswith(root_real + os.sep):
+                allowed = True
+                break
+        if not allowed:
             return files
+        if not os.path.isdir(resolved):
+            return files
+
+        directory = Path(resolved)
         if not allow_protected and is_protected_path(directory):
             print(f"⚠️  Skipping protected directory: {directory}")
             return files
 
         try:
-            # Iterate after confinement; still skip symlinks / protected leaves.
-            for file_path in directory.rglob('*'):
-                try:
-                    # Skip symlinks (and anything reached through a symlinked parent)
-                    if is_symlink_or_through_symlink(file_path):
+            # Walk the sanitized string path so iteration stays under the barrier.
+            for dirpath, dirnames, filenames in os.walk(resolved):
+                # Do not descend into symlinked directories
+                dirnames[:] = [
+                    name
+                    for name in dirnames
+                    if not os.path.islink(os.path.join(dirpath, name))
+                ]
+                for name in filenames:
+                    file_path = Path(dirpath) / name
+                    try:
+                        if is_symlink_or_through_symlink(file_path):
+                            continue
+                        if not file_path.is_file():
+                            continue
+                        if self.file_analyzer.is_system_file(file_path):
+                            continue
+                        if not allow_protected and is_protected_path(file_path):
+                            continue
+                        files.append({
+                            'path': file_path,
+                            'name': file_path.name,
+                            'size': file_path.stat().st_size,
+                            'modified': datetime.fromtimestamp(file_path.stat().st_mtime)
+                        })
+                    except (PermissionError, OSError):
                         continue
-                    if not file_path.is_file():
-                        continue
-                    if self.file_analyzer.is_system_file(file_path):
-                        continue
-                    if not allow_protected and is_protected_path(file_path):
-                        continue
-                    files.append({
-                        'path': file_path,
-                        'name': file_path.name,
-                        'size': file_path.stat().st_size,
-                        'modified': datetime.fromtimestamp(file_path.stat().st_mtime)
-                    })
-                except (PermissionError, OSError):
-                    continue
         except PermissionError:
             pass
 

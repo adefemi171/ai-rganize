@@ -16,6 +16,16 @@ def _realpath(path: str | Path) -> str:
     return os.path.realpath(os.path.expanduser(text))
 
 
+def _is_under_root(resolved: str, root_real: str) -> bool:
+    """Return True if *resolved* is *root_real* or a descendant.
+
+    Uses ``startswith`` — the containment pattern CodeQL recognizes for
+    ``py/path-injection`` (``os.path.commonpath`` / ``Path.is_relative_to``
+    are not modeled as sanitizers).
+    """
+    return resolved == root_real or resolved.startswith(root_real + os.sep)
+
+
 def default_allowed_roots() -> list[Path]:
     """Roots under which user-supplied paths may resolve.
 
@@ -35,7 +45,7 @@ def is_within_directory(path: Path, directory: Path) -> bool:
     try:
         resolved = _realpath(path)
         root = _realpath(directory)
-        return os.path.commonpath([resolved, root]) == root
+        return _is_under_root(resolved, root)
     except (ValueError, OSError):
         return False
 
@@ -47,8 +57,8 @@ def normalize_user_path(
 ) -> Path:
     """Validate and resolve a user-supplied path under allowed roots.
 
-    Confinement uses ``os.path.realpath`` + ``os.path.commonpath`` so path-injection
-    analyzers (e.g. CodeQL) can see the check as a sanitizer.
+    Confinement uses ``os.path.realpath`` + ``startswith`` so path-injection
+    analyzers (e.g. CodeQL ``py/path-injection``) treat the result as sanitized.
     """
     if raw is None:
         raise ValueError("Path is required")
@@ -58,34 +68,26 @@ def normalize_user_path(
     if "\0" in text:
         raise ValueError("Invalid path")
 
-    resolved = _realpath(text)
+    # Keep realpath at this call site (not only via a helper) so taint analysis
+    # can see the canonicalization + startswith barrier on the same value.
+    resolved = os.path.realpath(os.path.expanduser(text))
     roots = allowed_roots if allowed_roots is not None else default_allowed_roots()
     for root in roots:
         try:
-            root_real = _realpath(root)
-        except (ValueError, OSError):
+            root_real = os.path.realpath(os.path.expanduser(os.fspath(root)))
+        except (ValueError, OSError, TypeError):
             continue
-        try:
-            if os.path.commonpath([resolved, root_real]) == root_real:
-                return Path(resolved)
-        except ValueError:
-            continue
+        if resolved == root_real or resolved.startswith(root_real + os.sep):
+            return Path(resolved)
     raise ValueError("Path outside allowed directories")
 
 
 def ensure_destination_safe(dest: Path, root: Path) -> Path:
     """Resolve *dest* and raise if it would escape *root*."""
-    root_resolved = _realpath(root)
-    parent = _realpath(dest.parent)
-    try:
-        if os.path.commonpath([parent, root_resolved]) != root_resolved:
-            raise ValueError(f"Destination escapes root: {dest}")
-    except ValueError as exc:
-        # commonpath raises ValueError when paths are on different drives /
-        # when the destination is outside root.
-        if str(exc).startswith("Destination escapes root:"):
-            raise
-        raise ValueError(f"Destination escapes root: {dest}") from exc
+    root_resolved = os.path.realpath(os.path.expanduser(os.fspath(root)))
+    parent = os.path.realpath(os.path.expanduser(os.fspath(dest.parent)))
+    if not (parent == root_resolved or parent.startswith(root_resolved + os.sep)):
+        raise ValueError(f"Destination escapes root: {dest}")
     return Path(parent) / Path(dest).name
 
 
@@ -142,11 +144,11 @@ def sanitize_folder_name(name: str) -> str:
 def is_protected_path(path: Path) -> bool:
     """Return True for sensitive system/credential locations that must not be scanned."""
     try:
-        resolved = _realpath(path)
-    except (ValueError, OSError):
+        resolved = os.path.realpath(os.path.expanduser(os.fspath(path)))
+    except (ValueError, OSError, TypeError):
         return True
 
-    home = _realpath(Path.home())
+    home = os.path.realpath(os.path.expanduser(os.fspath(Path.home())))
     protected_roots = [
         os.path.join(home, "Library"),
         os.path.join(home, ".ssh"),
@@ -155,9 +157,6 @@ def is_protected_path(path: Path) -> bool:
         os.path.join(home, ".config", "gcloud"),
     ]
     for protected in protected_roots:
-        try:
-            if os.path.commonpath([resolved, protected]) == protected:
-                return True
-        except ValueError:
-            continue
+        if resolved == protected or resolved.startswith(protected + os.sep):
+            return True
     return False

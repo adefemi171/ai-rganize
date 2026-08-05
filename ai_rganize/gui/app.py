@@ -10,6 +10,7 @@ classes (no new file-moving logic lives here).
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from typing import Any
 
@@ -19,7 +20,6 @@ from ai_rganize.config import default_profile, list_profiles, load_profile
 from ai_rganize.features.cloud_sync import discover_cloud_roots
 from ai_rganize.provenance.ledger import LEDGER_PATH
 from ai_rganize.provenance.ledger import query as query_ledger
-from ai_rganize.utils.safety import normalize_user_path
 
 HOST = "127.0.0.1"
 PORT = 8765
@@ -80,26 +80,28 @@ def create_app() -> Flask:
             # Do not echo exception details to the client.
             return jsonify({"error": "Profile not found"}), 404
 
-        try:
-            if directory:
-                if not isinstance(directory, str):
-                    return jsonify({"error": "Invalid directory"}), 400
-                # GUI stays confined to the user's home directory (not temp/Volumes).
-                target_dir = normalize_user_path(
-                    directory, allowed_roots=[Path.home()]
-                )
-            elif profile.destination:
-                target_dir = normalize_user_path(
-                    profile.destination, allowed_roots=[Path.home()]
-                )
-            else:
-                return jsonify({"error": "No valid directory provided or found in profile"}), 400
-        except ValueError:
+        raw_dir: str | None
+        if directory:
+            if not isinstance(directory, str):
+                return jsonify({"error": "Invalid directory"}), 400
+            raw_dir = directory.strip()
+        elif profile.destination:
+            raw_dir = str(profile.destination).strip()
+        else:
+            return jsonify({"error": "No valid directory provided or found in profile"}), 400
+
+        if not raw_dir or "\0" in raw_dir:
             return jsonify({"error": "Invalid or disallowed directory"}), 400
 
-        if not target_dir.is_dir():
+        # CodeQL-recognized barrier: realpath + startswith under $HOME.
+        resolved = os.path.realpath(os.path.expanduser(raw_dir))
+        home = os.path.realpath(os.path.expanduser(str(Path.home())))
+        if resolved != home and not resolved.startswith(home + os.sep):
+            return jsonify({"error": "Invalid or disallowed directory"}), 400
+        if not os.path.isdir(resolved):
             return jsonify({"error": "Directory does not exist"}), 400
 
+        target_dir = Path(resolved)
         result = _build_plan_summary(target_dir, profile)
         result["dry_run"] = bool(dry_run)
 
@@ -136,7 +138,7 @@ def _status_payload() -> dict[str, Any]:
 def _build_plan_summary(target_dir: Path, profile) -> dict[str, Any]:
     from ai_rganize.organizer.rule_based_organizer import RuleBasedOrganizer
 
-    # target_dir is already validated via normalize_user_path
+    # target_dir is already confined under $HOME by the API handler.
     organizer = RuleBasedOrganizer()
     files = organizer.scan_files(target_dir)
     plan = organizer.create_organization_plan(files)
