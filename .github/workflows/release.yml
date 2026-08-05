@@ -46,7 +46,7 @@ jobs:
 
             **From this GitHub release / repo:**
             ```bash
-            uv tool install "ai_rganize @ git+https://github.com/adefemi171/airganizer.git@${{ github.ref_name }}"
+            uv tool install "ai_rganize @ git+https://github.com/adefemi171/ai-rganize.git@${{ github.ref_name }}"
             ```
 
             **Homebrew** (tap):
@@ -55,4 +55,4 @@ jobs:
             brew install ai-rganize
             ```
 
-            See [RELEASE_NOTES.md](https://github.com/adefemi171/airganizer/blob/main/RELEASE_NOTES.md) for details.
+            See [RELEASE_NOTES.md](https://github.com/adefemi171/ai-rganize/blob/main/RELEASE_NOTES.md) for details.

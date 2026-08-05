@@ -7,7 +7,7 @@
 1. Create/claim the project on [PyPI](https://pypi.org) (name: `ai_rganize`).
 2. Under **Publishing** → **Add a new pending publisher**:
    - Owner: `adefemi171`
-   - Repository: `airganizer` (match the GitHub repo name)
+   - Repository: `ai-rganize` (match the GitHub repo name)
    - Workflow name: `publish-pypi.yml`
    - Environment name: `pypi`
 3. In GitHub → **Settings → Environments**, create environment `pypi` (optional protection rules).
@@ -40,10 +40,10 @@ Dry-run a build without uploading: Actions → **Publish to PyPI** → Run workf
 
 ```bash
 # Latest main
-uv tool install "git+https://github.com/adefemi171/airganizer.git"
+uv tool install "git+https://github.com/adefemi171/ai-rganize.git"
 
 # Pin to a tag
-uv tool install "ai_rganize @ git+https://github.com/adefemi171/airganizer.git@v1.0.0"
+uv tool install "ai_rganize @ git+https://github.com/adefemi171/ai-rganize.git@v1.0.0"
 
 # Upgrade later
 uv tool upgrade ai_rganize
@@ -52,7 +52,7 @@ uv tool upgrade ai_rganize
 `pipx` equivalent:
 
 ```bash
-pipx install "git+https://github.com/adefemi171/airganizer.git@v1.0.0"
+pipx install "git+https://github.com/adefemi171/ai-rganize.git@v1.0.0"
 ```
 
 ---

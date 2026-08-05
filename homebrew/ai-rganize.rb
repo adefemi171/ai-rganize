@@ -15,12 +15,12 @@
 #   ./scripts/update_homebrew_sha.sh v1.0.0
 class AiRganize < Formula
   desc "AI-powered file organizer for your local folders"
-  homepage "https://github.com/adefemi171/airganizer"
+  homepage "https://github.com/adefemi171/ai-rganize"
   # Prefer PyPI once the first release is published; GitHub tag is the bootstrap source.
-  url "https://github.com/adefemi171/airganizer/archive/refs/tags/v1.0.0.tar.gz"
+  url "https://github.com/adefemi171/ai-rganize/archive/refs/tags/v1.0.0.tar.gz"
   sha256 "0000000000000000000000000000000000000000000000000000000000000000"
   license "MIT"
-  head "https://github.com/adefemi171/airganizer.git", branch: "main"
+  head "https://github.com/adefemi171/ai-rganize.git", branch: "main"
 
   depends_on "python@3.12"
   depends_on "ffmpeg" => :recommended

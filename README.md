@@ -39,13 +39,13 @@ Upgrade later: `uv tool upgrade ai_rganize`
 
 ```bash
 # Latest main
-uv tool install "git+https://github.com/adefemi171/airganizer.git"
+uv tool install "git+https://github.com/adefemi171/ai-rganize.git"
 
 # Pin to a release tag
-uv tool install "ai_rganize @ git+https://github.com/adefemi171/airganizer.git@v1.0.0"
+uv tool install "ai_rganize @ git+https://github.com/adefemi171/ai-rganize.git@v1.0.0"
 
 # pipx alternative
-pipx install "git+https://github.com/adefemi171/airganizer.git@v1.0.0"
+pipx install "git+https://github.com/adefemi171/ai-rganize.git@v1.0.0"
 ```
 
 ### 3. Homebrew (macOS)
@@ -60,7 +60,7 @@ Tap repo: [`homebrew-airganize`](https://github.com/adefemi171/homebrew-airganiz
 ### Development install (contributors)
 
 ```bash
-git clone https://github.com/adefemi171/airganizer.git
+git clone https://github.com/adefemi171/ai-rganize.git
 cd airganizer
 uv venv && source .venv/bin/activate
 uv pip install -e ".[dev,gui]"

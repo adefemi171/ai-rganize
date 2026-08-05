@@ -61,10 +61,10 @@ all = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/adefemi171/airganizer"
-Documentation = "https://github.com/adefemi171/airganizer#readme"
-Repository = "https://github.com/adefemi171/airganizer.git"
-Issues = "https://github.com/adefemi171/airganizer/issues"
+Homepage = "https://github.com/adefemi171/ai-rganize"
+Documentation = "https://github.com/adefemi171/ai-rganize#readme"
+Repository = "https://github.com/adefemi171/ai-rganize.git"
+Issues = "https://github.com/adefemi171/ai-rganize/issues"
 
 [project.scripts]
 ai-rganize = "ai_rganize.cli:main"

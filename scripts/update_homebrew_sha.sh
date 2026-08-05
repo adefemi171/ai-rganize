@@ -5,7 +5,7 @@ set -euo pipefail
 
 TAG="${1:?Usage: $0 v1.0.0}"
 FORMULA="$(cd "$(dirname "$0")/.." && pwd)/homebrew/ai-rganize.rb"
-URL="https://github.com/adefemi171/airganizer/archive/refs/tags/${TAG}.tar.gz"
+URL="https://github.com/adefemi171/ai-rganize/archive/refs/tags/${TAG}.tar.gz"
 
 tmpdir="$(mktemp -d)"
 trap 'rm -rf "$tmpdir"' EXIT
