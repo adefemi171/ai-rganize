@@ -119,8 +119,9 @@
 
     <p class="footer">
         Use <code>GET /api/status</code> for a JSON snapshot, or
-        <code>POST /api/organize</code> (dry run by default) to preview an
-        organization plan for a directory.
+        <code>POST /api/organize</code> with a named target
+        ({% for t in targets %}<code>{{ t }}</code>{% if not loop.last %}, {% endif %}{% endfor %};
+        dry run by default). Free-form filesystem paths are not accepted.
     </p>
 </body>
 </html>

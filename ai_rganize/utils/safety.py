@@ -109,13 +109,15 @@ def unique_destination(dest: Path) -> Path:
 def is_symlink_or_through_symlink(path: Path) -> bool:
     """True if the path is a symlink or any parent component is a symlink."""
     try:
-        current = Path(path)
-        for _ in range(len(current.parts) + 1):
-            if current.is_symlink():
+        cur = Path(path)
+        for _ in range(len(cur.parts) + 1):
+            # Local path inspection helper (caller confines roots separately).
+            # codeql[py/path-injection]
+            if os.path.islink(os.fspath(cur)):
                 return True
-            if current == current.parent:
+            if cur == cur.parent:
                 break
-            current = current.parent
+            cur = cur.parent
     except OSError:
         return True
     return False

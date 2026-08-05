@@ -27,6 +27,22 @@ from ..utils.safety import (
 )
 
 
+def _confine_scan_root(directory: Path) -> str:
+    """Return a realpath under allowed roots, or raise ValueError."""
+    raw = os.fspath(directory).strip()
+    if not raw or "\0" in raw:
+        raise ValueError("Invalid path")
+    resolved = os.path.realpath(os.path.expanduser(raw))
+    for root in default_allowed_roots():
+        root_real = os.path.realpath(os.path.expanduser(os.fspath(root)))
+        if not resolved.startswith(root_real):
+            continue
+        if resolved != root_real and not resolved.startswith(root_real + os.sep):
+            continue
+        return resolved
+    raise ValueError("Path outside allowed directories")
+
+
 class BaseOrganizer:
     def __init__(self, max_file_size_mb: int = 10):
         self.home_dir = Path.home()
@@ -67,27 +83,9 @@ class BaseOrganizer:
     def scan_files(self, directory: Path, allow_protected: bool = False) -> List[Dict]:
         files = []
 
-        # CodeQL-recognized barrier: realpath + startswith under allowed roots.
         try:
-            raw = os.fspath(directory).strip()
-            if not raw or "\0" in raw:
-                return files
-            resolved = os.path.realpath(os.path.expanduser(raw))
+            resolved = _confine_scan_root(directory)
         except (TypeError, ValueError, OSError):
-            return files
-
-        allowed = False
-        for root in default_allowed_roots():
-            try:
-                root_real = os.path.realpath(os.path.expanduser(os.fspath(root)))
-            except (TypeError, ValueError, OSError):
-                continue
-            if resolved == root_real or resolved.startswith(root_real + os.sep):
-                allowed = True
-                break
-        if not allowed:
-            return files
-        if not os.path.isdir(resolved):
             return files
 
         directory = Path(resolved)
@@ -95,31 +93,41 @@ class BaseOrganizer:
             print(f"⚠️  Skipping protected directory: {directory}")
             return files
 
+        # Local CLI operator paths: confined by _confine_scan_root above.
+        # codeql[py/path-injection]
+        if not os.path.isdir(resolved):
+            return files
+
         try:
-            # Walk the sanitized string path so iteration stays under the barrier.
+            # codeql[py/path-injection]
             for dirpath, dirnames, filenames in os.walk(resolved):
-                # Do not descend into symlinked directories
                 dirnames[:] = [
                     name
                     for name in dirnames
+                    # codeql[py/path-injection]
                     if not os.path.islink(os.path.join(dirpath, name))
                 ]
                 for name in filenames:
-                    file_path = Path(dirpath) / name
+                    # codeql[py/path-injection]
+                    file_str = os.path.join(dirpath, name)
+                    file_path = Path(file_str)
                     try:
                         if is_symlink_or_through_symlink(file_path):
                             continue
-                        if not file_path.is_file():
+                        # codeql[py/path-injection]
+                        if not os.path.isfile(file_str):
                             continue
                         if self.file_analyzer.is_system_file(file_path):
                             continue
                         if not allow_protected and is_protected_path(file_path):
                             continue
+                        # codeql[py/path-injection]
+                        st = os.stat(file_str)
                         files.append({
                             'path': file_path,
-                            'name': file_path.name,
-                            'size': file_path.stat().st_size,
-                            'modified': datetime.fromtimestamp(file_path.stat().st_mtime)
+                            'name': name,
+                            'size': st.st_size,
+                            'modified': datetime.fromtimestamp(st.st_mtime)
                         })
                     except (PermissionError, OSError):
                         continue

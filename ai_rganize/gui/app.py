@@ -6,13 +6,16 @@ a network service, and it must never be exposed beyond localhost. The
 opt in with ``{"dry_run": false}`` to actually move files, and even then it
 only builds/executes an organization plan through the existing organizer
 classes (no new file-moving logic lives here).
+
+Directory selection never accepts free-form filesystem paths from the client.
+Callers pick a named target (``Downloads``, ``Documents``, …) that is mapped
+server-side under ``Path.home()``.
 """
 
 from __future__ import annotations
 
-import os
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 from flask import Flask, jsonify, render_template, request
 
@@ -25,6 +28,14 @@ HOST = "127.0.0.1"
 PORT = 8765
 
 TEMPLATE_DIR = Path(__file__).parent / "templates"
+
+# Named targets only — values are built from Path.home(), never from request data.
+_TARGET_BUILDERS: dict[str, Callable[[], Path]] = {
+    "Downloads": lambda: Path.home() / "Downloads",
+    "Documents": lambda: Path.home() / "Documents",
+    "Desktop": lambda: Path.home() / "Desktop",
+    "Pictures": lambda: Path.home() / "Pictures",
+}
 
 
 def create_app() -> Flask:
@@ -56,6 +67,7 @@ def create_app() -> Flask:
             profiles=profiles,
             cloud_roots=cloud_roots,
             ledger_path=str(LEDGER_PATH),
+            targets=sorted(_TARGET_BUILDERS),
         )
 
     @app.route("/api/status", methods=["GET"])
@@ -66,12 +78,14 @@ def create_app() -> Flask:
     def api_organize():
         payload: dict[str, Any] = request.get_json(silent=True) or {}
         dry_run = payload.get("dry_run", True)
-        directory = payload.get("directory")
+        target_name = payload.get("directory") or payload.get("target") or "Downloads"
         profile_name = payload.get("profile")
 
         if profile_name is not None and not isinstance(profile_name, str):
             return jsonify({"error": "Invalid profile"}), 400
-        if profile_name is not None and ("/" in profile_name or "\\" in profile_name or ".." in profile_name):
+        if profile_name is not None and (
+            "/" in profile_name or "\\" in profile_name or ".." in profile_name
+        ):
             return jsonify({"error": "Invalid profile"}), 400
 
         try:
@@ -80,30 +94,19 @@ def create_app() -> Flask:
             # Do not echo exception details to the client.
             return jsonify({"error": "Profile not found"}), 404
 
-        raw_dir: str | None
-        if directory:
-            if not isinstance(directory, str):
-                return jsonify({"error": "Invalid directory"}), 400
-            raw_dir = directory.strip()
-        elif profile.destination:
-            raw_dir = str(profile.destination).strip()
-        else:
-            return jsonify({"error": "No valid directory provided or found in profile"}), 400
+        if not isinstance(target_name, str) or target_name not in _TARGET_BUILDERS:
+            return jsonify({
+                "error": "Invalid target",
+                "allowed": sorted(_TARGET_BUILDERS),
+            }), 400
 
-        if not raw_dir or "\0" in raw_dir:
-            return jsonify({"error": "Invalid or disallowed directory"}), 400
-
-        # CodeQL-recognized barrier: realpath + startswith under $HOME.
-        resolved = os.path.realpath(os.path.expanduser(raw_dir))
-        home = os.path.realpath(os.path.expanduser(str(Path.home())))
-        if resolved != home and not resolved.startswith(home + os.sep):
-            return jsonify({"error": "Invalid or disallowed directory"}), 400
-        if not os.path.isdir(resolved):
+        target_dir = _TARGET_BUILDERS[target_name]()
+        if not target_dir.is_dir():
             return jsonify({"error": "Directory does not exist"}), 400
 
-        target_dir = Path(resolved)
         result = _build_plan_summary(target_dir, profile)
         result["dry_run"] = bool(dry_run)
+        result["target"] = target_name
 
         if not dry_run:
             # Executing organization from the web UI is intentionally not
@@ -130,6 +133,7 @@ def _status_payload() -> dict[str, Any]:
         "cloud_providers_detected": cloud_roots,
         "ledger_path": str(LEDGER_PATH),
         "ledger_record_count": len(recent),
+        "allowed_targets": sorted(_TARGET_BUILDERS),
         "host": HOST,
         "port": PORT,
     }
@@ -138,7 +142,6 @@ def _status_payload() -> dict[str, Any]:
 def _build_plan_summary(target_dir: Path, profile) -> dict[str, Any]:
     from ai_rganize.organizer.rule_based_organizer import RuleBasedOrganizer
 
-    # target_dir is already confined under $HOME by the API handler.
     organizer = RuleBasedOrganizer()
     files = organizer.scan_files(target_dir)
     plan = organizer.create_organization_plan(files)
