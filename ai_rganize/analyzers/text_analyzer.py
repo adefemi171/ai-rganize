@@ -8,10 +8,10 @@ class TextAnalyzer:
         try:
             with open(file_path, 'r', encoding='utf-8', errors='ignore') as file:
                 content = file.read(1000)  # First 1000 characters
-            
+
             if not content.strip():
                 return "Empty text file"
-            
+
             # Look for common patterns
             content_lower = content.lower()
             if any(keyword in content_lower for keyword in ['resume', 'cv', 'curriculum vitae']):
@@ -26,6 +26,6 @@ class TextAnalyzer:
                 return f"Text Code/Programming: {content[:100]}..."
             else:
                 return f"Text Document: {content[:100]}..."
-        
+
         except Exception as e:
             return f"Text analysis error: {str(e)[:50]}"

@@ -1,22 +1,27 @@
 """Base organizer functionality."""
 
-import os
-import shutil
 import platform
+import shutil
 import traceback
+from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional
-from datetime import datetime
 
 from rich.console import Console
-from rich.panel import Panel
 
-from ..permissions import PermissionHandler
 from ..file_analysis import FileAnalyzer
+from ..permissions import PermissionHandler
 from ..utils.metadata import (
-    move_preserving_metadata,
     create_manifest,
+    move_preserving_metadata,
     save_manifest,
+)
+from ..utils.safety import (
+    ensure_destination_safe,
+    is_protected_path,
+    is_symlink_or_through_symlink,
+    sanitize_folder_name,
+    unique_destination,
 )
 
 
@@ -26,7 +31,7 @@ class BaseOrganizer:
         self.target_dirs = self._get_common_directories()
         self.max_file_size_bytes = max_file_size_mb * 1024 * 1024
         self.file_analyzer = FileAnalyzer(max_file_size_mb)
-        
+
         # Organization categories for rule-based categorization
         self.categories = {
             'documents': ['pdf', 'doc', 'docx', 'txt', 'rtf', 'pages'],
@@ -39,210 +44,185 @@ class BaseOrganizer:
             'presentations': ['ppt', 'pptx', 'key'],
             'other': []
         }
-    
+
     def _get_common_directories(self) -> Dict[str, Path]:
         home = Path.home()
-        
-        if platform.system() == "Darwin":  # macOS
-            return {
-                'Documents': home / 'Documents',
-                'Desktop': home / 'Desktop',
-                'Downloads': home / 'Downloads',
-                'Pictures': home / 'Pictures' if (home / 'Pictures').exists() else None,
-                'Library': home / 'Library'
-            }
-        elif platform.system() == "Windows":
-            return {
-                'Documents': home / 'Documents',
-                'Desktop': home / 'Desktop',
-                'Downloads': home / 'Downloads',
-                'Pictures': home / 'Pictures',
-                'Videos': home / 'Videos',
-                'Music': home / 'Music'
-            }
-        else:  # Linux and others
-            return {
-                'Documents': home / 'Documents',
-                'Desktop': home / 'Desktop',
-                'Downloads': home / 'Downloads',
-                'Pictures': home / 'Pictures',
-                'Videos': home / 'Videos',
-                'Music': home / 'Music'
-            }
-    
+        # Intentionally omit ~/Library and other sensitive roots
+        common = {
+            'Documents': home / 'Documents',
+            'Desktop': home / 'Desktop',
+            'Downloads': home / 'Downloads',
+            'Pictures': home / 'Pictures',
+        }
+        if platform.system() != "Darwin":
+            common['Videos'] = home / 'Videos'
+            common['Music'] = home / 'Music'
+        return {name: path for name, path in common.items() if path is not None}
+
     def check_permissions(self) -> bool:
         return PermissionHandler().check_permissions(self.target_dirs)
-    
-    def scan_files(self, directory: Path) -> List[Dict]:
+
+    def scan_files(self, directory: Path, allow_protected: bool = False) -> List[Dict]:
         files = []
-        
+
         if not directory.exists():
             return files
-        
+        if not allow_protected and is_protected_path(directory):
+            print(f"⚠️  Skipping protected directory: {directory}")
+            return files
+
         try:
             for file_path in directory.rglob('*'):
-                if file_path.is_file() and not self.file_analyzer.is_system_file(file_path):
-                    # Include all files regardless of size
+                try:
+                    # Skip symlinks (and anything reached through a symlinked parent)
+                    if is_symlink_or_through_symlink(file_path):
+                        continue
+                    if not file_path.is_file():
+                        continue
+                    if self.file_analyzer.is_system_file(file_path):
+                        continue
+                    if not allow_protected and is_protected_path(file_path):
+                        continue
                     files.append({
                         'path': file_path,
                         'name': file_path.name,
                         'size': file_path.stat().st_size,
                         'modified': datetime.fromtimestamp(file_path.stat().st_mtime)
                     })
+                except (PermissionError, OSError):
+                    continue
         except PermissionError:
-            pass  # Skip directories we can't access
-        
+            pass
+
         return files
-    
+
     def create_backup(self, files: List[Dict]) -> bool:
         try:
             backup_dir = Path.home() / 'ai_rganize_backup' / datetime.now().strftime('%Y%m%d_%H%M%S')
             backup_dir.mkdir(parents=True, exist_ok=True)
-            
+
             for file_info in files:
                 source = file_info['path']
-                relative_path = source.relative_to(source.parents[1])  # Get relative path
+                try:
+                    relative_path = source.relative_to(Path.home())
+                except ValueError:
+                    relative_path = Path(source.name)
                 backup_path = backup_dir / relative_path
                 backup_path.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(source, backup_path)
-            
+
             print(f"✅ Backup created at: {backup_dir}")
             return True
-        
+
         except Exception as e:
             print(f"❌ Backup failed: {e}")
             return False
-    
-    def execute_organization(self, plan: Dict, target_dir: Path, 
+
+    def execute_organization(self, plan: Dict, target_dir: Path,
                              save_manifest_file: bool = True,
                              ai_provider: Optional[str] = None,
                              model: Optional[str] = None) -> bool:
         """
         Execute the organization plan with metadata preservation.
         
-        Args:
-            plan: Organization plan mapping folder names to files
-            target_dir: Target directory for organization
-            save_manifest_file: Whether to save manifest for undo capability
-            ai_provider: Name of AI provider used (for manifest)
-            model: Model name used (for manifest)
-            
-        Returns:
-            True if any files were moved successfully
+        Destinations are confined under *target_dir*. Existing files are never
+        overwritten; colliding names get a numeric suffix.
         """
         try:
             files_moved = 0
-            folders_created = 0
-            
-            # Create manifest for tracking moves
-            manifest = create_manifest(target_dir, ai_provider, model)
-            
+            target_root = target_dir.expanduser().resolve()
+            manifest = create_manifest(target_root, ai_provider, model)
+
             for folder_name, files in plan.items():
-                if folder_name == 'summary':
+                if folder_name == 'summary' or not files:
                     continue
-                
-                if not files:  # Skip empty folders
-                    continue
-                
-                # Create destination folder
-                dest_folder = target_dir / folder_name
+
+                clean_name = self._clean_folder_name(folder_name)
+                dest_folder = ensure_destination_safe(target_root / clean_name, target_root)
                 dest_folder.mkdir(exist_ok=True)
-                folders_created += 1
-                
-                # Move files
+
                 for file_info in files:
-                    source = file_info['path']
-                    dest = dest_folder / source.name
-                    
-                    # Check if source exists
+                    source = Path(file_info['path'])
                     if not source.exists():
                         print(f"⚠️  File not found: {source}")
                         continue
-                    
-                    # Don't move if already in correct location
-                    if source.resolve() == dest.resolve():
+                    if is_symlink_or_through_symlink(source):
+                        print(f"⚠️  Skipping symlink: {source}")
                         continue
-                    
-                    # Move the file with metadata preservation
+
+                    dest = ensure_destination_safe(dest_folder / source.name, target_root)
+                    dest = unique_destination(dest)
+
+                    try:
+                        if source.resolve() == dest.resolve():
+                            continue
+                    except OSError:
+                        pass
+
                     try:
                         metadata = move_preserving_metadata(source, dest)
-                        
-                        # Add to manifest
-                        manifest.add_move(source, dest, folder_name, metadata)
-                        
+                        manifest.add_move(source, dest, clean_name, metadata)
                         files_moved += 1
-                        print(f"✅ Moved: {source.name} → {folder_name}/")
+                        print(f"✅ Moved: {source.name} → {clean_name}/{dest.name}")
                     except Exception as e:
                         print(f"❌ Failed to move {source.name}: {e}")
-            
-            # Save manifest if any files were moved
+
             if files_moved > 0 and save_manifest_file:
-                manifest_path = save_manifest(manifest, target_dir)
+                manifest_path = save_manifest(manifest, target_root)
                 print(f"📋 Manifest saved: {manifest_path}")
-            
+
             if files_moved == 0:
                 print("⚠️  No files were moved. The organization plan may be empty or files are already in the correct location.")
-            
+
             return files_moved > 0
-        
+
         except Exception as e:
             print(f"❌ Organization failed: {e}")
             traceback.print_exc()
             return False
-    
+
     def _clean_folder_name(self, name: str) -> str:
-        # Remove invalid characters
-        invalid_chars = '<>:"/\\|?*'
-        for char in invalid_chars:
-            name = name.replace(char, '_')
-        
-        # Limit length
-        if len(name) > 100:
-            name = name[:100]
-        
-        # Remove leading/trailing spaces and dots
-        name = name.strip(' .')
-        
-        return name or 'Unnamed_Folder'
-    
-    def display_organization_plan(self, plan: Dict, show_details: bool = True):
+        return sanitize_folder_name(name)
+
+    def display_organization_plan(self, plan: Dict, show_details: bool = True,
+                                  target_dir: Optional[Path] = None):
         console = Console()
-        
+
         if not show_details:
-            # Show only summary
             summary = plan.get('summary', {})
             method = summary.get('method', 'unknown')
             ai_files = summary.get('ai_files_processed', 0)
             cost = summary.get('cost_estimate', 0)
-            
+
+            console.print(
+                f"\n📊 [bold]Summary:[/bold] {summary.get('total_files', 0)} files will be "
+                f"organized into {summary.get('total_folders', 0)} folders"
+            )
             if method == 'ai-powered' and ai_files > 0:
-                console.print(f"\n📊 [bold]Summary:[/bold] {summary.get('total_files', 0)} files will be organized into {summary.get('total_folders', 0)} folders")
-                console.print(f"🤖 [bold]AI Processing:[/bold] {ai_files} files processed with AI (${cost:.4f} estimated cost)")
-            else:
-                console.print(f"\n📊 [bold]Summary:[/bold] {summary.get('total_files', 0)} files will be organized into {summary.get('total_folders', 0)} folders")
+                console.print(
+                    f"🤖 [bold]AI Processing:[/bold] {ai_files} files processed "
+                    f"with AI (${cost:.4f} estimated cost)"
+                )
             return
-        
-        # Show detailed plan
+
         for folder_name, files in plan.items():
-            if folder_name == 'summary':
+            if folder_name == 'summary' or not files:
                 continue
-            
-            if not files:
-                continue
-            
-            # Calculate total size
+
             total_size = sum(f['size'] for f in files)
             size_mb = total_size / (1024 * 1024)
-            
-            # Display folder info
             console.print(f"\n📁 [bold]{folder_name}[/bold] ({len(files)} files, {size_mb:.1f} MB)")
-            
+
             for file_info in files:
-                source_path = file_info['path']
-                file_size = file_info['size'] / 1024  # KB
-                destination_path = source_path.parent / folder_name / source_path.name
-                
+                source_path = Path(file_info['path'])
+                file_size = file_info['size'] / 1024
+                if target_dir is not None:
+                    destination_path = Path(target_dir) / folder_name / source_path.name
+                else:
+                    # Per-file root: organize into the file's immediate scanned root parent
+                    destination_path = source_path.parent / folder_name / source_path.name
+
                 console.print(f"  📄 {file_info['name']} ({file_size:.1f} KB)")
                 console.print(f"     From: {source_path.parent}")
                 console.print(f"     To:   {destination_path}")
-                console.print()  # Add spacing
+                console.print()

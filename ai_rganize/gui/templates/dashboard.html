@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>AI-rganize Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        :root {
+            color-scheme: light dark;
+            --accent: #4f8cff;
+            --bg: #0f1115;
+            --card: #171a21;
+            --text: #e6e9ef;
+            --muted: #9aa3b2;
+            --border: #2a2e37;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            padding: 2rem;
+        }
+        h1 { font-size: 1.5rem; margin-bottom: 0.25rem; }
+        .subtitle { color: var(--muted); margin-bottom: 2rem; }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.25rem;
+        }
+        .card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 1.25rem;
+        }
+        .card h2 {
+            font-size: 1rem;
+            margin: 0 0 0.75rem 0;
+            color: var(--accent);
+        }
+        table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+        th, td { text-align: left; padding: 0.35rem 0.5rem; border-bottom: 1px solid var(--border); }
+        th { color: var(--muted); font-weight: 500; }
+        .badge {
+            display: inline-block;
+            padding: 0.1rem 0.5rem;
+            border-radius: 999px;
+            background: rgba(79, 140, 255, 0.15);
+            color: var(--accent);
+            font-size: 0.75rem;
+        }
+        .empty { color: var(--muted); font-style: italic; font-size: 0.85rem; }
+        .footer { margin-top: 2rem; color: var(--muted); font-size: 0.75rem; }
+        code { background: rgba(255,255,255,0.06); padding: 0.1rem 0.35rem; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <h1>AI-rganize Dashboard</h1>
+    <p class="subtitle">Local-only operator console &middot; bound to 127.0.0.1:8765</p>
+
+    <div class="grid">
+        <div class="card">
+            <h2>Profiles</h2>
+            {% if profiles %}
+            <ul>
+                {% for profile in profiles %}
+                <li>{{ profile }}</li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p class="empty">No profiles saved yet.</p>
+            {% endif %}
+        </div>
+
+        <div class="card">
+            <h2>Detected Cloud Sync Folders</h2>
+            {% if cloud_roots %}
+            <table>
+                <tr><th>Provider</th><th>Path</th></tr>
+                {% for name, path in cloud_roots.items() %}
+                <tr><td><span class="badge">{{ name }}</span></td><td>{{ path }}</td></tr>
+                {% endfor %}
+            </table>
+            {% else %}
+            <p class="empty">No cloud sync folders detected on this machine.</p>
+            {% endif %}
+        </div>
+
+        <div class="card" style="grid-column: 1 / -1;">
+            <h2>Recent Ledger Activity</h2>
+            {% if ledger_entries %}
+            <table>
+                <tr>
+                    <th>Timestamp</th>
+                    <th>Run</th>
+                    <th>Source</th>
+                    <th>Destination</th>
+                    <th>Folder</th>
+                    <th>Confidence</th>
+                </tr>
+                {% for entry in ledger_entries %}
+                <tr>
+                    <td>{{ entry.timestamp }}</td>
+                    <td><code>{{ entry.run_id }}</code></td>
+                    <td>{{ entry.source }}</td>
+                    <td>{{ entry.dest }}</td>
+                    <td>{{ entry.folder }}</td>
+                    <td>{{ entry.confidence if entry.confidence is not none else "—" }}</td>
+                </tr>
+                {% endfor %}
+            </table>
+            {% else %}
+            <p class="empty">No ledger entries yet at <code>{{ ledger_path }}</code>.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <p class="footer">
+        Use <code>GET /api/status</code> for a JSON snapshot, or
+        <code>POST /api/organize</code> (dry run by default) to preview an
+        organization plan for a directory.
+    </p>
+</body>
+</html>

@@ -9,16 +9,16 @@ from rich.prompt import Confirm, Prompt
 
 class Console:
     """Console wrapper for consistent output."""
-    
+
     def __init__(self):
         self.console = RichConsole()
-    
+
     def print(self, *args, **kwargs):
         self.console.print(*args, **kwargs)
-    
+
     def input(self, prompt: str = "") -> str:
         return Prompt.ask(prompt)
-    
+
     def confirm(self, message: str) -> bool:
         return Confirm.ask(message)
 

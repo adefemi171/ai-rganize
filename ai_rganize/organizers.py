@@ -1,5 +1,5 @@
 """Organizer classes."""
 
-from .organizer import BaseOrganizer, AIOrganizer, RuleBasedOrganizer
+from .organizer import AIOrganizer, BaseOrganizer, RuleBasedOrganizer
 
 __all__ = ['BaseOrganizer', 'AIOrganizer', 'RuleBasedOrganizer']

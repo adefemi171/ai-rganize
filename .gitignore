@@ -41,9 +41,28 @@ Thumbs.db
 
 # AIrganizer specific
 .airganizer_backup/
+.ai_rganize_backup/
+ai_rganize_backup/
 .airganizer_log.json
+.ai_rganize_log.json
 
 # uv
 .uv/
 .history/
 .kiro/
+
+# Testing and linting
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+*.log
+
+# AIrganize runtime data
+.ai_rganize/
+.airganize/
+
+# Local planning / e2e artifacts (do not commit)
+ROADMAP.md
+.e2e*
+.e2e_*/
