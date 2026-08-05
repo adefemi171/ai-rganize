@@ -1,6 +1,6 @@
 [project]
 name = "ai_rganize"
-version = "0.0.1"
+version = "1.0.0"
 description = "An intelligent file organization tool that uses AI to automatically categorize and organize your files"
 readme = "README.md"
 license = {text = "MIT"}
@@ -9,7 +9,7 @@ authors = [
 ]
 keywords = ["file-organization", "ai", "automation", "productivity", "filesystem"]
 classifiers = [
-    "Development Status :: 4 - Beta",
+    "Development Status :: 5 - Production/Stable",
     "Intended Audience :: End Users/Desktop",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
@@ -27,8 +27,9 @@ dependencies = [
     "click>=8.0.0",
     "rich>=10.0.0",
     "python-dotenv>=0.19.0",
-    "PyPDF2>=3.0.0",
+    "pypdf>=5.0.0",
     "python-docx>=1.1.0",
+    "pyyaml>=6.0",
 ]
 
 [project.optional-dependencies]
@@ -37,24 +38,39 @@ gemini = ["google-generativeai>=0.3.0"]
 ollama = ["ollama>=0.1.0"]
 mistral = ["mistralai>=0.1.0"]
 metadata = ["xattr>=0.10.0"]
+gui = [
+    "watchdog>=3.0.0",
+    "flask>=3.0.0",
+    "pyyaml>=6.0",
+]
+dev = [
+    "pytest>=7",
+    "pytest-cov",
+    "ruff>=0.4",
+    "pip-audit",
+]
 all = [
     "anthropic>=0.7.0",
     "google-generativeai>=0.3.0",
     "ollama>=0.1.0",
     "mistralai>=0.1.0",
     "xattr>=0.10.0",
+    "watchdog>=3.0.0",
+    "flask>=3.0.0",
+    "pyyaml>=6.0",
 ]
 
 [project.urls]
-Homepage = "https://github.com/adefemi171/airganizer"
-Documentation = "https://github.com/adefemi171/airganizer#readme"
-Repository = "https://github.com/adefemi171/airganizer.git"
-Issues = "https://github.com/adefemi171/airganizer/issues"
+Homepage = "https://github.com/adefemi171/ai-rganize"
+Documentation = "https://github.com/adefemi171/ai-rganize#readme"
+Repository = "https://github.com/adefemi171/ai-rganize.git"
+Issues = "https://github.com/adefemi171/ai-rganize/issues"
 
 [project.scripts]
 ai-rganize = "ai_rganize.cli:main"
 ai-organize = "ai_rganize.cli:main"
 ai-rganize-permissions = "ai_rganize.permissions_cli:main"
+ai-rganize-gui = "ai_rganize.gui.app:main"
 
 [build-system]
 requires = ["hatchling"]
@@ -62,3 +78,26 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["ai_rganize"]
+
+# Non-.py assets under the package (templates, prompts, skill docs)
+[tool.hatch.build.targets.wheel.force-include]
+"ai_rganize/skills/AIRGANIZE_SKILL.md" = "ai_rganize/skills/AIRGANIZE_SKILL.md"
+
+[tool.hatch.build]
+include = [
+  "ai_rganize/**/*.py",
+  "ai_rganize/**/*.txt",
+  "ai_rganize/**/*.html",
+  "ai_rganize/**/*.md",
+]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
+ignore = ["E501"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

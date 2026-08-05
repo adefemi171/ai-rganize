@@ -5,24 +5,35 @@ File utility functions for common operations.
 import re
 from pathlib import Path
 
+SYSTEM_FILES = {
+    '.DS_Store',
+    'Thumbs.db',
+    'desktop.ini',
+    '.localized',
+    '.Spotlight-V100',
+    '.Trashes',
+    '.fseventsd',
+    '.TemporaryItems',
+}
+
 
 def extract_person_name(filename: str) -> str:
     """Extract person name from filename for intelligent grouping."""
     # Remove file extension
     name = Path(filename).stem
-    
+
     # Common patterns for person names
     patterns = [
         r'([A-Z][a-z]+_[A-Z][a-z]+)',  # FirstName_LastName
         r'([A-Z][a-z]+\.[A-Z][a-z]+)',  # FirstName.LastName
         r'([A-Z][a-z]+\s+[A-Z][a-z]+)',  # FirstName LastName
     ]
-    
+
     for pattern in patterns:
         match = re.search(pattern, name)
         if match:
             return match.group(1).replace('_', ' ').replace('.', ' ')
-    
+
     return None
 
 

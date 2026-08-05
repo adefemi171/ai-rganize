@@ -1,0 +1,8 @@
+# Default owner for all files
+* @adefemi171
+
+# Critical paths requiring review
+/ai_rganize/cli.py @adefemi171
+/ai_rganize/utils/metadata.py @adefemi171
+/ai_rganize/organizer/ @adefemi171
+/ai_rganize/analyzers/ @adefemi171

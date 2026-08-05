@@ -4,101 +4,80 @@ An intelligent file organization tool that uses AI to automatically categorize a
 
 Name was inspired by the music I was listening to when this idea popped in my head, the music is [Organize](https://open.spotify.com/track/2wgvxtggKVzPkl0smF2UzI) by Asake
 
-## Features
+## Features (v1.0.0)
 
-- 🤖 **AI-Powered Categorization**: Uses AI (OpenAI, Claude, Gemini, Ollama, Mistral) to intelligently categorize files based on content and metadata
-- 📂 **Multiple Directory Support**: Organizes common directories (Documents, Desktop, Downloads, etc.)
-- 🎯 **Content Analysis**: Analyzes PDFs, Word docs, images, videos, and audio files for intelligent categorization
-- 📁 **Folder Limit Control**: Specify maximum number of folders to create (e.g., organize 200 files into 6 folders)
-- 🔒 **Cross-Platform**: Works on macOS, Linux (Ubuntu, etc.), and Windows
-- 🔒 **Permission Handling**: Properly handles file access permissions across platforms
-- 💾 **Backup System**: Optional automatic backups before moving files
-- 🖥️ **Terminal Interface**: Clean, user-friendly command-line interface
-- 🔍 **Dry Run Mode**: Preview organization plan before making changes
+- 🤖 **AI categorization** via OpenAI, Claude, Gemini, Ollama, Mistral, OpenRouter
+- 🗳️ **LLM Council** multi-provider majority vote (`council-organize` / `--council`)
+- 📂 **Profiles, exclusions, review plans**, and a provenance ledger for undo/audit
+- 🛡️ **Hardened moves**: no-clobber, symlink skip, path confinement, protected dirs blocked
+- 📦 **Safe archive unpack** (zip/tar, zip-slip resistant) and exact-hash **duplicate** detection
+- ☁️ **Cloud folder discovery** for local Dropbox / iCloud / Google Drive mounts
+- 👀 **Watch mode**, feedback memory, and a localhost **GUI dashboard** (`ai-rganize-gui`)
+- 🔍 **Dry-run** + optional backup + manifest restore
+- See [RELEASE_NOTES.md](RELEASE_NOTES.md) and [CONTRIBUTING.md](CONTRIBUTING.md)
 
 ## Installation
 
-### **Quick Start with uv (Recommended)**
+You need **ffmpeg** for video/audio analysis (`brew install ffmpeg` / `apt install ffmpeg`).
 
-**Why uv?** uv provides fast, reliable Python project management with automatic virtual environment creation, dependency resolution, and lockfile management. It's significantly faster than pip and handles all the complexity of Python environments for you.
+### 1. PyPI (best for most users)
 
-**First, install uv and ffmpeg:**
-
-**macOS:**
+> Available after the first `v*` GitHub Release + PyPI publish (see [docs/PUBLISHING.md](docs/PUBLISHING.md)).
 
 ```bash
-brew install uv ffmpeg
+# Recommended: isolated CLI tool install
+uv tool install ai_rganize
+
+# Or classic pip / pipx
+pip install ai_rganize
+pipx install ai_rganize
 ```
 
-**Linux:**
+Upgrade later: `uv tool upgrade ai_rganize`
+
+### 2. GitHub + uv / pipx (works today, before PyPI)
 
 ```bash
-# Install uv
-curl -LsSf https://astral.sh/uv/install.sh | sh
+# Latest main
+uv tool install "git+https://github.com/adefemi171/ai-rganize.git"
 
-# Install ffmpeg
-sudo apt update && sudo apt install ffmpeg  # Ubuntu/Debian
-# or
-sudo yum install ffmpeg  # CentOS/RHEL
+# Pin to a release tag
+uv tool install "ai_rganize @ git+https://github.com/adefemi171/ai-rganize.git@v1.0.0"
+
+# pipx alternative
+pipx install "git+https://github.com/adefemi171/ai-rganize.git@v1.0.0"
 ```
 
-**Windows:**
-
-```powershell
-# Install uv
-powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
-
-# Install ffmpeg
-choco install ffmpeg
-# or download from https://ffmpeg.org/download.html
-```
-
-**Alternative (PyPI):**
+### 3. Homebrew (macOS)
 
 ```bash
-pip install uv
-# Then install ffmpeg separately for your platform
+brew tap adefemi171/airganize
+brew install ai-rganize
 ```
 
-For more installation options, see the [official uv installation guide](https://docs.astral.sh/uv/getting-started/installation/).
+Tap repo: [`homebrew-airganize`](https://github.com/adefemi171/homebrew-airganize) (create once; formula source lives in this repo at [`homebrew/ai-rganize.rb`](homebrew/ai-rganize.rb)).
 
-**Then set up ai-rganize:**
+### Development install (contributors)
 
 ```bash
-# 1. Clone the repository
-git clone https://github.com/yourusername/ai-rganize.git
+git clone https://github.com/adefemi171/ai-rganize.git
 cd ai-rganize
-
-# 2. Create virtual environment with uv
-uv venv
-
-# 3. Activate the virtual environment
-source .venv/bin/activate  # On macOS/Linux
-# or
-.venv\Scripts\activate     # On Windows
-
-# 4. Install dependencies and package
-uv pip install -r requirements.txt
-uv pip install -e .
-
-# 5. Set up API key (choose your provider)
-export OPENAI_API_KEY="your_api_key_here"        # For OpenAI
-# export ANTHROPIC_API_KEY="your_api_key_here"   # For Claude
-# export GEMINI_API_KEY="your_api_key_here"      # For Gemini
-# export MISTRAL_API_KEY="your_api_key_here"     # For Mistral
-
-# 6. Test with dry run
-ai-rganize --dry-run
+uv venv && source .venv/bin/activate
+uv pip install -e ".[dev,gui]"
 ```
 
-**What uv does for you:**
+### API keys
 
-- 🚀 **Automatic virtual environment creation** (`.venv/` directory)
-- 📦 **Dependency resolution and installation** from `pyproject.toml`
-- 🔒 **Lockfile management** (`uv.lock`) for reproducible builds
-- ⚡ **Fast package installation** (10-100x faster than pip)
-- 🛠️ **Project management** with `uv sync`, `uv add`, `uv remove`
-- 🐍 **Python version management** with `uv python install`
+```bash
+export OPENAI_API_KEY="your_api_key_here"
+# export ANTHROPIC_API_KEY="..."
+# export GEMINI_API_KEY="..."
+# export MISTRAL_API_KEY="..."
+
+ai-rganize organize --dry-run -d ~/Downloads
+```
+
+Publishing maintainers: see [docs/PUBLISHING.md](docs/PUBLISHING.md).
 
 ## Usage
 

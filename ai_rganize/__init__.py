@@ -2,7 +2,7 @@
 
 __version__ = "1.0.0"
 
-from .organizers import RuleBasedOrganizer, AIOrganizer
 from .cli import main
+from .organizers import AIOrganizer, RuleBasedOrganizer
 
 __all__ = ["RuleBasedOrganizer", "AIOrganizer", "main"]
