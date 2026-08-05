@@ -1,12 +1,18 @@
-# Publish to PyPI via Trusted Publishing (OIDC) when a GitHub Release is published.
+# Publish to PyPI via Trusted Publishing (OIDC).
 # One-time setup: https://pypi.org/manage/account/publishing/
 #   - Owner: adefemi171 (or org)
 #   - Repository: ai-rganize
 #   - Workflow: publish-pypi.yml
 #   - Environment name: pypi
+#
+# Triggered on version tags (not only release:published), because releases created
+# with GITHUB_TOKEN do not start other workflows.
 name: Publish to PyPI
 
 on:
+  push:
+    tags:
+      - "v*"
   release:
     types: [published]
   workflow_dispatch:
