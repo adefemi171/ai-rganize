@@ -61,7 +61,7 @@ Tap repo: [`homebrew-airganize`](https://github.com/adefemi171/homebrew-airganiz
 
 ```bash
 git clone https://github.com/adefemi171/ai-rganize.git
-cd airganizer
+cd ai-rganize
 uv venv && source .venv/bin/activate
 uv pip install -e ".[dev,gui]"
 ```
