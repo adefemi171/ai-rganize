@@ -18,7 +18,7 @@ class AiRganize < Formula
   homepage "https://github.com/adefemi171/ai-rganize"
   # Prefer PyPI once the first release is published; GitHub tag is the bootstrap source.
   url "https://github.com/adefemi171/ai-rganize/archive/refs/tags/v1.0.0.tar.gz"
-  sha256 "0000000000000000000000000000000000000000000000000000000000000000"
+  sha256 "343d7615b0bf27aa9aad72332c7b8b5bc9560e7e68d93376aaa2ee33536d9089"
   license "MIT"
   head "https://github.com/adefemi171/ai-rganize.git", branch: "main"
 

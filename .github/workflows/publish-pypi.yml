@@ -50,5 +50,5 @@ jobs:
           path: dist/
 
       - name: Publish to PyPI
-        if: ${{ github.event_name == 'release' || (github.event_name == 'workflow_dispatch' && !inputs.dry_run) }}
+        if: ${{ github.event_name == 'release' || github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && !inputs.dry_run) }}
         uses: pypa/gh-action-pypi-publish@release/v1

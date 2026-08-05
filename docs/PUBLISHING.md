@@ -23,7 +23,11 @@ git push origin v1.0.0
 This triggers:
 
 1. **Release** workflow → GitHub Release + wheel/sdist artifacts  
-2. **Publish to PyPI** workflow (on `release: published`) → uploads to PyPI  
+2. **Publish to PyPI** workflow (on the same `v*` tag push) → uploads to PyPI  
+
+Note: a Release created with the default `GITHUB_TOKEN` does **not** start other
+workflows, so PyPI publish is wired to the tag push itself (and can also be run
+manually via Actions → **Publish to PyPI** → Run workflow).
 
 Users can then:
 
