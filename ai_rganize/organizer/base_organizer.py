@@ -20,6 +20,7 @@ from ..utils.safety import (
     ensure_destination_safe,
     is_protected_path,
     is_symlink_or_through_symlink,
+    normalize_user_path,
     sanitize_folder_name,
     unique_destination,
 )
@@ -65,13 +66,20 @@ class BaseOrganizer:
     def scan_files(self, directory: Path, allow_protected: bool = False) -> List[Dict]:
         files = []
 
-        if not directory.exists():
+        # Sanitize caller-supplied paths before any filesystem ops (CodeQL path-injection).
+        try:
+            directory = normalize_user_path(directory)
+        except ValueError:
+            return files
+
+        if not directory.is_dir():
             return files
         if not allow_protected and is_protected_path(directory):
             print(f"⚠️  Skipping protected directory: {directory}")
             return files
 
         try:
+            # Iterate after confinement; still skip symlinks / protected leaves.
             for file_path in directory.rglob('*'):
                 try:
                     # Skip symlinks (and anything reached through a symlinked parent)

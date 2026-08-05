@@ -11,6 +11,7 @@ from ai_rganize.utils.safety import (
     is_protected_path,
     is_symlink_or_through_symlink,
     is_within_directory,
+    normalize_user_path,
     sanitize_folder_name,
     unique_destination,
     validate_restore_path,
@@ -149,3 +150,24 @@ def test_is_protected_path_ssh():
 def test_is_protected_path_regular_dir_not_protected(tmp_path):
     regular = tmp_path / "Documents" / "file.txt"
     assert is_protected_path(regular) is False
+
+
+def test_normalize_user_path_allows_under_home(tmp_path, monkeypatch):
+    monkeypatch.setenv("HOME", str(tmp_path))
+    target = tmp_path / "Downloads"
+    target.mkdir()
+    assert normalize_user_path(str(target), allowed_roots=[tmp_path]) == target.resolve()
+
+
+def test_normalize_user_path_rejects_outside_allowed_root(tmp_path):
+    outside = tmp_path / "allowed"
+    outside.mkdir()
+    other = tmp_path / "other"
+    other.mkdir()
+    with pytest.raises(ValueError):
+        normalize_user_path(str(other), allowed_roots=[outside])
+
+
+def test_normalize_user_path_rejects_nul():
+    with pytest.raises(ValueError):
+        normalize_user_path("/tmp/evil\0name")

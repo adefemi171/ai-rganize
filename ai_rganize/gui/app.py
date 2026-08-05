@@ -19,6 +19,7 @@ from ai_rganize.config import default_profile, list_profiles, load_profile
 from ai_rganize.features.cloud_sync import discover_cloud_roots
 from ai_rganize.provenance.ledger import LEDGER_PATH
 from ai_rganize.provenance.ledger import query as query_ledger
+from ai_rganize.utils.safety import normalize_user_path
 
 HOST = "127.0.0.1"
 PORT = 8765
@@ -29,11 +30,19 @@ TEMPLATE_DIR = Path(__file__).parent / "templates"
 def create_app() -> Flask:
     app = Flask(__name__, template_folder=str(TEMPLATE_DIR))
 
+    @app.before_request
+    def _require_localhost():
+        # Reject requests that claim a non-local Host header.
+        host = (request.host or "").split(":", 1)[0].lower()
+        if host not in {"127.0.0.1", "localhost", "::1"}:
+            return jsonify({"error": "Forbidden"}), 403
+        return None
+
     @app.after_request
     def _restrict_host(response):
-        # Defense in depth: reject anything that didn't arrive via localhost,
-        # in case the process is ever run behind an unexpected proxy.
         response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["Cache-Control"] = "no-store"
         return response
 
     @app.route("/", methods=["GET"])
@@ -60,19 +69,36 @@ def create_app() -> Flask:
         directory = payload.get("directory")
         profile_name = payload.get("profile")
 
+        if profile_name is not None and not isinstance(profile_name, str):
+            return jsonify({"error": "Invalid profile"}), 400
+        if profile_name is not None and ("/" in profile_name or "\\" in profile_name or ".." in profile_name):
+            return jsonify({"error": "Invalid profile"}), 400
+
         try:
             profile = load_profile(profile_name) if profile_name else default_profile()
-        except FileNotFoundError as exc:
-            return jsonify({"error": str(exc)}), 404
+        except FileNotFoundError:
+            # Do not echo exception details to the client.
+            return jsonify({"error": "Profile not found"}), 404
 
-        if directory:
-            target_dir = Path(directory)
-        elif profile.destination:
-            target_dir = Path(profile.destination)
-        else:
-            target_dir = None
-        if target_dir is None or not target_dir.exists():
-            return jsonify({"error": "No valid directory provided or found in profile"}), 400
+        try:
+            if directory:
+                if not isinstance(directory, str):
+                    return jsonify({"error": "Invalid directory"}), 400
+                # GUI stays confined to the user's home directory (not temp/Volumes).
+                target_dir = normalize_user_path(
+                    directory, allowed_roots=[Path.home()]
+                )
+            elif profile.destination:
+                target_dir = normalize_user_path(
+                    profile.destination, allowed_roots=[Path.home()]
+                )
+            else:
+                return jsonify({"error": "No valid directory provided or found in profile"}), 400
+        except ValueError:
+            return jsonify({"error": "Invalid or disallowed directory"}), 400
+
+        if not target_dir.is_dir():
+            return jsonify({"error": "Directory does not exist"}), 400
 
         result = _build_plan_summary(target_dir, profile)
         result["dry_run"] = bool(dry_run)
@@ -81,8 +107,6 @@ def create_app() -> Flask:
             # Executing organization from the web UI is intentionally not
             # implemented here to avoid duplicating (and potentially
             # diverging from) the CLI's safety-checked execution path.
-            # Callers should use the CLI's `--restore`/execute flow, which
-            # already handles manifests, metadata preservation, and undo.
             result["executed"] = False
             result["note"] = (
                 "Execution from the dashboard is disabled for safety; "
@@ -112,6 +136,7 @@ def _status_payload() -> dict[str, Any]:
 def _build_plan_summary(target_dir: Path, profile) -> dict[str, Any]:
     from ai_rganize.organizer.rule_based_organizer import RuleBasedOrganizer
 
+    # target_dir is already validated via normalize_user_path
     organizer = RuleBasedOrganizer()
     files = organizer.scan_files(target_dir)
     plan = organizer.create_organization_plan(files)
