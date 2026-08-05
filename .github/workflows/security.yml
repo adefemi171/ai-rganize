@@ -27,7 +27,8 @@ jobs:
           pip install -e ".[dev]" || (pip install -e . && pip install pip-audit)
 
       - name: Run pip-audit
-        run: pip-audit
+        # Skip the local editable package (not on PyPI yet); audit installed deps only.
+        run: pip-audit --skip-editable
 
   codeql:
     runs-on: ubuntu-latest

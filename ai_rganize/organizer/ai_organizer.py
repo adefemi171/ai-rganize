@@ -4,7 +4,7 @@ import time
 from pathlib import Path
 from typing import Dict, List, Optional
 
-import PyPDF2
+from pypdf import PdfReader
 
 try:
     from docx import Document
@@ -71,7 +71,7 @@ class AIOrganizer(BaseOrganizer):
         try:
             text_parts = []
             with open(path, 'rb') as f:
-                reader = PyPDF2.PdfReader(f)
+                reader = PdfReader(f)
                 pages_to_read = min(len(reader.pages), 3)  # First 3 pages
 
                 for i in range(pages_to_read):

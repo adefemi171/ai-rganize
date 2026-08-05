@@ -3,8 +3,8 @@
 import time
 from pathlib import Path
 
-import PyPDF2
 from openai import OpenAI
+from pypdf import PdfReader
 
 try:
     from docx import Document
@@ -164,7 +164,7 @@ class DocumentAnalyzer:
     def _analyze_pdf_local(self, file_path: Path) -> str:
         try:
             with open(file_path, 'rb') as file:
-                pdf_reader = PyPDF2.PdfReader(file)
+                pdf_reader = PdfReader(file)
 
                 # Extract text from first few pages
                 text_content = ""
